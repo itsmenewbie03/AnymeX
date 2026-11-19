@@ -1,0 +1,125 @@
+name: Build Android Beta
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: "3.41.6"
+
+jobs:
+  build-android-beta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install compatible CMake
+        shell: bash
+        run: |
+          mkdir -p "$HOME/cmake"
+          wget -q https://github.com/Kitware/CMake/releases/download/v3.18.1/cmake-3.18.1-Linux-x86_64.tar.gz
+          tar -xzf cmake-3.18.1-Linux-x86_64.tar.gz -C "$HOME/cmake"
+          echo "cmake.dir=$HOME/cmake/cmake-3.18.1-Linux-x86_64" >> android/local.properties
+
+      - name: Configure Android build
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          AL_CLIENT_ID=
+          AL_CLIENT_SECRET=
+          SIMKL_CLIENT_ID=
+          SIMKL_CLIENT_SECRET=
+          MAL_CLIENT_ID=
+          MAL_CLIENT_SECRET=
+          CALLBACK_SCHEME=
+          GOOGLE_BOOKS_API_KEY=
+          GIT_CLIENT_ID=
+          GIT_CLIENT_SECRET=
+          GIT_CALLBACK_SCHEME=
+          COMMENTS_BASE_URL=
+          BOT_BASE_URL=
+          BOT_API_SECRET=
+          TMDB_API_KEY=
+          WATCHIUM_SERVER_URL=
+          WATCHIUM_API_TOKEN=
+          EOF
+
+          keytool -genkeypair \
+            -keystore android/app/anymex-beta.jks \
+            -storepass android \
+            -keypass android \
+            -alias beta \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=AnymeX Beta, OU=Testing, O=AnymeX, C=US" \
+            -noprompt
+
+          cat > android/key.properties <<'EOF'
+          storePassword=android
+          keyPassword=android
+          keyAlias=beta
+          storeFile=anymex-beta.jks
+          EOF
+
+      - name: Build APKs
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+          flutter build apk --release
+
+          cd build/app/outputs/flutter-apk
+          mv app-armeabi-v7a-release.apk AnymeX-Android-Beta-armeabi-v7a.apk
+          mv app-arm64-v8a-release.apk AnymeX-Android-Beta-arm64-v8a.apk
+          mv app-x86_64-release.apk AnymeX-Android-Beta-x86_64.apk
+          mv app-release.apk AnymeX-Android-Beta-universal.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-beta-${{ github.run_number }}
+          retention-days: 14
+          path: build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk
+
+      - name: Publish beta pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-libass-beta-${{ github.run_number }}
+          name: Android libass beta ${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            Android test build for the libass font configuration fix.
+
+            This build uses a disposable beta signing key. Uninstall any official
+            AnymeX installation before installing this APK because their signatures
+            are different.
+          files: build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk
