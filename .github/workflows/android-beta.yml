@@ -52,6 +52,37 @@ jobs:
       - name: Configure Android build
         shell: bash
         run: |
+          python3 <<'PY'
+          import json
+          from pathlib import Path
+
+          gradle = Path('android/app/build.gradle.kts')
+          gradle.write_text(
+              gradle.read_text().replace(
+                  'applicationId = "com.ryan.anymex"',
+                  'applicationId = "com.ryan.anymex.beta"',
+                  1,
+              )
+          )
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          manifest.write_text(
+              manifest.read_text().replace(
+                  'android:label="AnymeX"',
+                  'android:label="AnymeX Beta"',
+                  1,
+              )
+          )
+
+          google_services = Path('android/app/google-services.json')
+          config = json.loads(google_services.read_text())
+          for client in config['client']:
+              client['client_info']['android_client_info']['package_name'] = (
+                  'com.ryan.anymex.beta'
+              )
+          google_services.write_text(json.dumps(config, indent=2) + '\n')
+          PY
+
           cat > .env <<'EOF'
           AL_CLIENT_ID=
           AL_CLIENT_SECRET=
@@ -119,7 +150,10 @@ jobs:
           body: |
             Android test build for the libass font configuration fix.
 
-            This build uses a disposable beta signing key. Uninstall any official
-            AnymeX installation before installing this APK because their signatures
-            are different.
+            Package: `com.ryan.anymex.beta`. It installs alongside the official app
+            and appears on the launcher as **AnymeX Beta**.
+
+            This build uses a disposable beta signing key. A future beta build may
+            require uninstalling the previous beta, but it will not affect the
+            official AnymeX installation.
           files: build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk
