@@ -2,6 +2,16 @@ name: Build Android Beta
 
 on:
   workflow_dispatch:
+    inputs:
+      full_build:
+        description: Also build a universal APK
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: android-beta
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -20,7 +30,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -122,18 +132,63 @@ jobs:
           EOF
 
       - name: Build APKs
+        id: build
+        shell: bash
         run: |
+          base_version=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
+          build_number=$((100000 + GITHUB_RUN_NUMBER))
+          build_name="${base_version}-beta.${GITHUB_RUN_NUMBER}"
+
+          echo "number=$build_number" >> "$GITHUB_OUTPUT"
+          echo "name=$build_name" >> "$GITHUB_OUTPUT"
+
           flutter pub get
-          flutter build apk --release --split-per-abi \
-            --build-number "${{ github.run_number }}"
           flutter build apk --release \
-            --build-number "${{ github.run_number }}"
+            --target-platform android-arm64 \
+            --build-number "$build_number" \
+            --build-name "$build_name"
 
           cd build/app/outputs/flutter-apk
-          mv app-armeabi-v7a-release.apk AnymeX-Android-Beta-armeabi-v7a.apk
-          mv app-arm64-v8a-release.apk AnymeX-Android-Beta-arm64-v8a.apk
-          mv app-x86_64-release.apk AnymeX-Android-Beta-x86_64.apk
-          mv app-release.apk AnymeX-Android-Beta-universal.apk
+          mv app-release.apk \
+            "AnymeX-Android-Beta-${GITHUB_RUN_NUMBER}-arm64-v8a.apk"
+
+          if [[ '${{ inputs.full_build }}' == 'true' ]]; then
+            cd ../../../..
+            flutter build apk --release \
+              --build-number "$build_number" \
+              --build-name "$build_name"
+            cd build/app/outputs/flutter-apk
+            mv app-release.apk \
+              "AnymeX-Android-Beta-${GITHUB_RUN_NUMBER}-universal.apk"
+          fi
+
+      - name: Verify update identity
+        shell: bash
+        env:
+          EXPECTED_CERT_SHA256: a1faa47c315726ed107bc29ab1553365013ae434edc0921e90018efb78bf9941
+          EXPECTED_VERSION_CODE: ${{ steps.build.outputs.number }}
+          EXPECTED_VERSION_NAME: ${{ steps.build.outputs.name }}
+        run: |
+          build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 \
+            -maxdepth 1 -type d | sort -V | tail -n 1)
+          aapt="$build_tools/aapt"
+          apksigner="$build_tools/apksigner"
+
+          for apk in build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk; do
+            "$apksigner" verify --verbose "$apk"
+
+            badging=$("$aapt" dump badging "$apk")
+            package_line=$(grep -m1 '^package:' <<< "$badging")
+            grep -q "name='com.ryan.anymex.beta'" <<< "$package_line"
+            grep -q "versionCode='$EXPECTED_VERSION_CODE'" <<< "$package_line"
+            grep -q "versionName='$EXPECTED_VERSION_NAME'" <<< "$package_line"
+
+            cert=$(
+              "$apksigner" verify --print-certs "$apk" \
+                | sed -n 's/^Signer #1 certificate SHA-256 digest: //p'
+            )
+            [[ "$cert" == "$EXPECTED_CERT_SHA256" ]]
+          done
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -155,7 +210,10 @@ jobs:
             Package: `com.ryan.anymex.beta`. It installs alongside the official app
             and appears on the launcher as **AnymeX Beta**.
 
+            Version: `${{ steps.build.outputs.name }}`
+            Version code: `${{ steps.build.outputs.number }}`
+
             Beta builds use a persistent signing key and increasing version code,
-            so future beta APKs can be installed as in-place updates. Builds older
-            than this release used disposable keys and must be uninstalled once.
+            so future beta APKs can be installed as in-place updates. Builds 1–4
+            used disposable keys and must be uninstalled once.
           files: build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk
