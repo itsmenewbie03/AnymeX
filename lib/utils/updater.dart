@@ -21,6 +21,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UpdateManager {
+  static const String _releaseRepository =
+      String.fromEnvironment('ANYMEX_RELEASE_REPOSITORY');
+
+  static const String _releaseTagPrefix = String.fromEnvironment(
+    'ANYMEX_RELEASE_TAG_PREFIX',
+    defaultValue: 'android-beta-',
+  );
+
   static const String _stableRepoUrl =
       'https://api.github.com/repos/RyanYuuki/AnymeX/releases/latest';
 
@@ -74,6 +82,49 @@ class UpdateManager {
         final packageInfo = await PackageInfo.fromPlatform();
         final isBetaApp = packageInfo.packageName == 'com.ryan.anymexbeta';
         final currentVersion = await _getCurrentVersion();
+
+        if (_releaseRepository.isNotEmpty) {
+          final channelRelease = await _fetchChannelRelease();
+
+          if (channelRelease == null) {
+            Logger.i('Failed to check the configured release channel');
+            if (manualCheck) {
+              snackBar('Failed to check for updates');
+            }
+            return;
+          }
+
+          final tagName = channelRelease['tag_name'] as String? ?? '';
+          final latestBuild = _channelBuildNumber(tagName);
+          final currentBuild = _channelBuildNumber(currentVersion);
+
+          if (latestBuild != null &&
+              currentBuild != null &&
+              latestBuild > currentBuild) {
+            final downloadUrls =
+                _buildDownloadUrls(channelRelease['assets'] ?? []);
+            final newVersion = currentVersion.replaceFirst(
+              RegExp(r'beta\.\d+$'),
+              'beta.$latestBuild',
+            );
+
+            if (context.mounted) {
+              _showUpdateBottomSheet(
+                context,
+                currentVersion,
+                newVersion,
+                channelRelease['body'] ?? '',
+                downloadUrls,
+              );
+            }
+          } else {
+            if (manualCheck) {
+              snackBar('No updates available');
+            }
+            Logger.i('Current release-channel build is up to date.');
+          }
+          return;
+        }
 
         if (isBetaApp) {
           final betaRelease = await _fetchLatestRelease(isBeta: true);
@@ -250,6 +301,51 @@ class UpdateManager {
   Future<String> _getCurrentVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
     return packageInfo.version;
+  }
+
+  int? _channelBuildNumber(String version) {
+    final tagMatch = RegExp(
+      '^${RegExp.escape(_releaseTagPrefix)}(\\d+)\$',
+    ).firstMatch(version);
+    if (tagMatch != null) {
+      return int.tryParse(tagMatch.group(1)!);
+    }
+
+    final versionMatch = RegExp(r'beta\.(\d+)$').firstMatch(version);
+    return versionMatch == null ? null : int.tryParse(versionMatch.group(1)!);
+  }
+
+  Future<Map<String, dynamic>?> _fetchChannelRelease() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://api.github.com/repos/$_releaseRepository/releases?per_page=100',
+        ),
+        headers: {'Accept': 'application/vnd.github+json'},
+      );
+
+      if (response.statusCode != 200) return null;
+
+      final releases = (json.decode(response.body) as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .where((release) =>
+              release['draft'] != true &&
+              release['prerelease'] == true &&
+              _channelBuildNumber(release['tag_name'] as String? ?? '') !=
+                  null)
+          .toList();
+
+      releases.sort((a, b) {
+        final aBuild = _channelBuildNumber(a['tag_name'] as String? ?? '')!;
+        final bBuild = _channelBuildNumber(b['tag_name'] as String? ?? '')!;
+        return bBuild.compareTo(aBuild);
+      });
+
+      return releases.firstOrNull;
+    } catch (e) {
+      debugPrint('Error fetching configured release channel: $e');
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> _fetchLatestRelease({

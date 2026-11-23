@@ -141,6 +141,8 @@ jobs:
           flutter build apk --release \
             --split-per-abi \
             --target-platform android-arm64 \
+            --dart-define=ANYMEX_RELEASE_REPOSITORY=itsmenewbie03/AnymeX \
+            --dart-define=ANYMEX_RELEASE_TAG_PREFIX=android-beta- \
             --build-number "$build_number" \
             --build-name "$build_name"
 
