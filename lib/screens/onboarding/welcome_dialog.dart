@@ -350,6 +350,14 @@ void showWelcomeDialogg(BuildContext context) {
   });
 }
 
+const _discordJoinNoticeDismissedKey =
+    'anymex_discord_notice_dismissed_v1';
+
+bool isDiscordJoinNoticeDismissed() => KvHelper.get<bool>(
+      _discordJoinNoticeDismissedKey,
+      defaultVal: false,
+    );
+
 void showDiscordJoinDialog(BuildContext context) {
   final settings = Get.find<Settings>();
   bool isUnlocked = KvHelper.get<bool>('anymex_discord_notice_unlocked', defaultVal: false);
@@ -368,7 +376,9 @@ void showDiscordJoinDialog(BuildContext context) {
               showCancelButton: false,
               confirmText: context.l10n.okay,
               isConfirmEnabled: isUnlocked,
-              onConfirm: () {},
+              onConfirm: () {
+                KvHelper.set(_discordJoinNoticeDismissedKey, true);
+              },
               contentWidget: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

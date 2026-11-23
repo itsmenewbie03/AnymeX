@@ -305,6 +305,7 @@ enum UISettingsKeys {
   historyCardStyle,
   liquidMode,
   liquidBackgroundPath,
+  useLegacyLiquidBackground,
   retainOriginalColor,
   usePosterColor,
   enablePosterKenBurns,
@@ -369,4 +370,3 @@ enum NetworkKeys {
   customUserAgent,
   fetchedUserAgent,
 }
-

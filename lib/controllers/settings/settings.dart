@@ -344,6 +344,8 @@ class Settings extends GetxController {
   }
 
   void _checkAndShowJoinDialog(BuildContext context) {
+    if (isDiscordJoinNoticeDismissed()) return;
+
     final showOnline = showJoinDialog.value;
     if (showOnline) {
       showDiscordJoinDialog(context);
@@ -387,6 +389,13 @@ class Settings extends GetxController {
   set liquidBackgroundPath(String value) {
     uiSettings.update((s) => s?.liquidBackgroundPath = value);
     UISettingsKeys.liquidBackgroundPath.set(value);
+  }
+
+  bool get useLegacyLiquidBackground =>
+      _getUISetting((s) => s.useLegacyLiquidBackground);
+  set useLegacyLiquidBackground(bool value) {
+    uiSettings.update((s) => s?.useLegacyLiquidBackground = value);
+    UISettingsKeys.useLegacyLiquidBackground.set(value);
   }
 
   bool get transculentBar => _getUISetting((s) => s.translucentTabBar);

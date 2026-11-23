@@ -386,6 +386,7 @@ class _MainAppState extends State<MainApp> {
       if (mounted) {
         const assetImages = [
           'assets/images/bg_glass.png',
+          'assets/images/bg_glass_legacy.webp',
           'assets/images/logo.png',
           'assets/images/logo_transparent.webp',
           'assets/images/anilist-icon.png',

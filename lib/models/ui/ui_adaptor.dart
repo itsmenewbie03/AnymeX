@@ -24,6 +24,7 @@ class UISettings {
   int historyCardStyle;
   bool liquidMode;
   String liquidBackgroundPath;
+  bool useLegacyLiquidBackground;
   bool retainOriginalColor;
   bool usePosterColor;
   bool enablePosterKenBurns;
@@ -69,6 +70,7 @@ class UISettings {
     this.liquidMode = true,
     this.retainOriginalColor = false,
     this.liquidBackgroundPath = '',
+    this.useLegacyLiquidBackground = false,
     this.usePosterColor = true,
     this.enablePosterKenBurns = true,
     this.carouselStyle = 0,
@@ -208,6 +210,8 @@ class UISettings {
           .get<bool>(uiDefaults.retainOriginalColor),
       liquidBackgroundPath: UISettingsKeys.liquidBackgroundPath
           .get<String>(uiDefaults.liquidBackgroundPath),
+      useLegacyLiquidBackground: UISettingsKeys.useLegacyLiquidBackground
+          .get<bool>(uiDefaults.useLegacyLiquidBackground),
       usePosterColor:
           UISettingsKeys.usePosterColor.get<bool>(uiDefaults.usePosterColor),
       enablePosterKenBurns: UISettingsKeys.enablePosterKenBurns

@@ -327,6 +327,16 @@ class _SettingsThemeState extends State<SettingsTheme> {
               },
             ),
             AnymeXTile.toggle(
+              icon: Icons.history_rounded,
+              title: 'Legacy wallpaper',
+              subtitle: 'Use the original background bundled with stable v3.2.0',
+              value: settings.useLegacyLiquidBackground,
+              onChanged: (enabled) {
+                settings.liquidBackgroundPath = '';
+                settings.useLegacyLiquidBackground = enabled;
+              },
+            ),
+            AnymeXTile.toggle(
               value: settings.retainOriginalColor,
               icon: HugeIcons.strokeRoundedImageComposition,
               title: context.l10n.retainOriginalColor,
@@ -339,7 +349,10 @@ class _SettingsThemeState extends State<SettingsTheme> {
               title: context.l10n.resetToDefaultPicture,
               showChevron: false,
               subtitle: context.l10n.resetToDefaultWallpaper,
-              onTap: () => settings.liquidBackgroundPath = "",
+              onTap: () {
+                settings.liquidBackgroundPath = '';
+                settings.useLegacyLiquidBackground = false;
+              },
             ),
           ],
         ],

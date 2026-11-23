@@ -201,6 +201,7 @@ class AnymeXScaffold extends StatelessWidget {
 
     return Obx(() {
       settings.liquidBackgroundPath;
+      settings.useLegacyLiquidBackground;
       settings.retainOriginalColor;
       settings.usePosterColor;
       final theme = _getTheme(context, settings);
@@ -282,7 +283,9 @@ class AnymeXScaffold extends StatelessWidget {
     final hasCustomBg = settingsController.liquidBackgroundPath.isNotEmpty;
     final imagePath = hasCustomBg
         ? "file://${settingsController.liquidBackgroundPath}"
-        : 'assets/images/bg_glass.png';
+        : settingsController.useLegacyLiquidBackground
+            ? 'assets/images/bg_glass_legacy.webp'
+            : 'assets/images/bg_glass.png';
 
     final fallbackColor = isOled
         ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)
