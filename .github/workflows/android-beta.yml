@@ -2,12 +2,6 @@ name: Build Android Beta
 
 on:
   workflow_dispatch:
-    inputs:
-      full_build:
-        description: Also build a universal APK
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: android-beta
@@ -137,30 +131,22 @@ jobs:
         run: |
           base_version=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
           build_number=$((100000 + GITHUB_RUN_NUMBER))
+          version_code=$((build_number + 2000))
           build_name="${base_version}-beta.${GITHUB_RUN_NUMBER}"
 
-          echo "number=$build_number" >> "$GITHUB_OUTPUT"
+          echo "number=$version_code" >> "$GITHUB_OUTPUT"
           echo "name=$build_name" >> "$GITHUB_OUTPUT"
 
           flutter pub get
           flutter build apk --release \
+            --split-per-abi \
             --target-platform android-arm64 \
             --build-number "$build_number" \
             --build-name "$build_name"
 
           cd build/app/outputs/flutter-apk
-          mv app-release.apk \
+          mv app-arm64-v8a-release.apk \
             "AnymeX-Android-Beta-${GITHUB_RUN_NUMBER}-arm64-v8a.apk"
-
-          if [[ '${{ inputs.full_build }}' == 'true' ]]; then
-            cd ../../../..
-            flutter build apk --release \
-              --build-number "$build_number" \
-              --build-name "$build_name"
-            cd build/app/outputs/flutter-apk
-            mv app-release.apk \
-              "AnymeX-Android-Beta-${GITHUB_RUN_NUMBER}-universal.apk"
-          fi
 
       - name: Verify update identity
         shell: bash
@@ -182,8 +168,9 @@ jobs:
             native_code=$(grep -m1 '^native-code:' <<< "$badging")
 
             cert=$(
-              "$apksigner" verify --print-certs "$apk" \
-                | sed -n 's/^Signer #1 certificate SHA-256 digest: //p'
+              "$apksigner" verify --verbose --print-certs "$apk" 2>&1 \
+                | awk -F': ' \
+                    '/certificate SHA-256 digest/ {print tolower($2); exit}'
             )
 
             echo "APK: $apk"
@@ -203,8 +190,8 @@ jobs:
               echo "::error::Expected version name $EXPECTED_VERSION_NAME"
               exit 1
             }
-            [[ "$native_code" == *"'arm64-v8a'"* ]] || {
-              echo '::error::APK does not contain ARM64 native libraries'
+            [[ "$native_code" == "native-code: 'arm64-v8a'" ]] || {
+              echo '::error::APK is not ARM64-only'
               exit 1
             }
             [[ "$cert" == "$EXPECTED_CERT_SHA256" ]] || {
