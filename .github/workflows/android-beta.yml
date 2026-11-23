@@ -51,6 +51,10 @@ jobs:
 
       - name: Configure Android build
         shell: bash
+        env:
+          BETA_KEYSTORE_BASE64: ${{ secrets.BETA_KEYSTORE_BASE64 }}
+          BETA_KEYSTORE_PASSWORD: ${{ secrets.BETA_KEYSTORE_PASSWORD }}
+          BETA_KEY_PASSWORD: ${{ secrets.BETA_KEY_PASSWORD }}
         run: |
           python3 <<'PY'
           import json
@@ -103,20 +107,16 @@ jobs:
           WATCHIUM_API_TOKEN=
           EOF
 
-          keytool -genkeypair \
-            -keystore android/app/anymex-beta.jks \
-            -storepass android \
-            -keypass android \
-            -alias beta \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 3650 \
-            -dname "CN=AnymeX Beta, OU=Testing, O=AnymeX, C=US" \
-            -noprompt
+          : "${BETA_KEYSTORE_BASE64:?Missing BETA_KEYSTORE_BASE64 secret}"
+          : "${BETA_KEYSTORE_PASSWORD:?Missing BETA_KEYSTORE_PASSWORD secret}"
+          : "${BETA_KEY_PASSWORD:?Missing BETA_KEY_PASSWORD secret}"
 
-          cat > android/key.properties <<'EOF'
-          storePassword=android
-          keyPassword=android
+          printf '%s' "$BETA_KEYSTORE_BASE64" \
+            | base64 --decode > android/app/anymex-beta.jks
+
+          cat > android/key.properties <<EOF
+          storePassword=$BETA_KEYSTORE_PASSWORD
+          keyPassword=$BETA_KEY_PASSWORD
           keyAlias=beta
           storeFile=anymex-beta.jks
           EOF
@@ -124,8 +124,10 @@ jobs:
       - name: Build APKs
         run: |
           flutter pub get
-          flutter build apk --release --split-per-abi
-          flutter build apk --release
+          flutter build apk --release --split-per-abi \
+            --build-number "${{ github.run_number }}"
+          flutter build apk --release \
+            --build-number "${{ github.run_number }}"
 
           cd build/app/outputs/flutter-apk
           mv app-armeabi-v7a-release.apk AnymeX-Android-Beta-armeabi-v7a.apk
@@ -143,17 +145,17 @@ jobs:
       - name: Publish beta pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-libass-beta-${{ github.run_number }}
-          name: Android libass beta ${{ github.run_number }}
+          tag_name: android-beta-${{ github.run_number }}
+          name: Android beta ${{ github.run_number }}
           prerelease: true
           generate_release_notes: false
           body: |
-            Android test build for the libass font configuration fix.
+            Android test build from fork `main`.
 
             Package: `com.ryan.anymex.beta`. It installs alongside the official app
             and appears on the launcher as **AnymeX Beta**.
 
-            This build uses a disposable beta signing key. A future beta build may
-            require uninstalling the previous beta, but it will not affect the
-            official AnymeX installation.
+            Beta builds use a persistent signing key and increasing version code,
+            so future beta APKs can be installed as in-place updates. Builds older
+            than this release used disposable keys and must be uninstalled once.
           files: build/app/outputs/flutter-apk/AnymeX-Android-Beta-*.apk
