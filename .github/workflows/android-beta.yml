@@ -179,15 +179,38 @@ jobs:
 
             badging=$("$aapt" dump badging "$apk")
             package_line=$(grep -m1 '^package:' <<< "$badging")
-            grep -q "name='com.ryan.anymex.beta'" <<< "$package_line"
-            grep -q "versionCode='$EXPECTED_VERSION_CODE'" <<< "$package_line"
-            grep -q "versionName='$EXPECTED_VERSION_NAME'" <<< "$package_line"
+            native_code=$(grep -m1 '^native-code:' <<< "$badging")
 
             cert=$(
               "$apksigner" verify --print-certs "$apk" \
                 | sed -n 's/^Signer #1 certificate SHA-256 digest: //p'
             )
-            [[ "$cert" == "$EXPECTED_CERT_SHA256" ]]
+
+            echo "APK: $apk"
+            echo "$package_line"
+            echo "$native_code"
+            echo "certificateSha256='$cert'"
+
+            [[ "$package_line" == *"name='com.ryan.anymex.beta'"* ]] || {
+              echo '::error::Unexpected Android package name'
+              exit 1
+            }
+            [[ "$package_line" == *"versionCode='$EXPECTED_VERSION_CODE'"* ]] || {
+              echo "::error::Expected version code $EXPECTED_VERSION_CODE"
+              exit 1
+            }
+            [[ "$package_line" == *"versionName='$EXPECTED_VERSION_NAME'"* ]] || {
+              echo "::error::Expected version name $EXPECTED_VERSION_NAME"
+              exit 1
+            }
+            [[ "$native_code" == *"'arm64-v8a'"* ]] || {
+              echo '::error::APK does not contain ARM64 native libraries'
+              exit 1
+            }
+            [[ "$cert" == "$EXPECTED_CERT_SHA256" ]] || {
+              echo '::error::Unexpected signing certificate'
+              exit 1
+            }
           done
 
       - name: Upload APK artifact
