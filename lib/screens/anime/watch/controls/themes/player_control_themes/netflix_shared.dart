@@ -1,7 +1,9 @@
+import 'package:anymex/l10n/l10n_extension.dart';
+import 'dart:io' show Platform;
 import 'package:anymex/screens/anime/watch/controller/player_controller.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/bottom_sheet.dart';
-import 'package:anymex/screens/settings/sub_settings/settings_player.dart';
 import 'package:anymex/services/cast/widgets/cast_device_dialog.dart';
+import 'package:anymex/widgets/anymex_widgets/anymex_titlebar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
@@ -277,7 +279,11 @@ class NFMoreSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.75;
+    final titleBarHeight =
+        (Platform.isWindows && !AnymeXTitleBar.isFullScreen.value) ? 40.0 : 0.0;
+    final topInset = MediaQuery.paddingOf(context).top + titleBarHeight;
+    final maxSheetHeight = (MediaQuery.sizeOf(context).height - topInset - 20.0)
+        .clamp(120.0, MediaQuery.sizeOf(context).height * 0.75);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxSheetHeight),
@@ -291,13 +297,14 @@ class NFMoreSheet extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: context.theme.colorScheme.outline
+                    .withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             NFSheetTile(
               icon: Icons.high_quality_rounded,
-              label: 'Quality',
+              label: context.l10n.quality,
               onTap: () {
                 Get.back();
                 PlayerBottomSheets.showVideoQuality(ctx, controller);
@@ -305,7 +312,7 @@ class NFMoreSheet extends StatelessWidget {
             ),
             NFSheetTile(
               icon: Icons.speed_rounded,
-              label: 'Playback speed',
+              label: context.l10n.playbackSpeed2,
               onTap: () {
                 Get.back();
                 controller.isSpeedPaneOpened.value = true;
@@ -313,7 +320,7 @@ class NFMoreSheet extends StatelessWidget {
             ),
             NFSheetTile(
               icon: Icons.music_note_rounded,
-              label: 'Audio track',
+              label: context.l10n.audioTrack2,
               onTap: () {
                 Get.back();
                 PlayerBottomSheets.showAudioTracks(ctx, controller);
@@ -321,7 +328,7 @@ class NFMoreSheet extends StatelessWidget {
             ),
             NFSheetTile(
               icon: Icons.tune_rounded,
-              label: 'Picture & shaders',
+              label: context.l10n.pictureShaders,
               onTap: () {
                 Get.back();
                 controller.openColorProfileBottomSheet(ctx);
@@ -329,7 +336,7 @@ class NFMoreSheet extends StatelessWidget {
             ),
             NFSheetTile(
               icon: Icons.cast_rounded,
-              label: 'Cast to device',
+              label: context.l10n.castToDevice2,
               onTap: () {
                 Get.back();
                 CastDeviceDialog.show(ctx, controller);
@@ -338,7 +345,7 @@ class NFMoreSheet extends StatelessWidget {
             if (!controller.isOffline.value)
               NFSheetTile(
                 icon: Icons.cloud_rounded,
-                label: 'Server',
+                label: context.l10n.server,
                 onTap: () {
                   Get.back();
                   PlayerBottomSheets.showVideoServers(ctx, controller);
@@ -346,25 +353,16 @@ class NFMoreSheet extends StatelessWidget {
               ),
             NFSheetTile(
               icon: Icons.settings_outlined,
-              label: 'Player settings',
+              label: context.l10n.playerSettings2,
               onTap: () {
                 Get.back();
-                controller.showSheetWithPause(
-                  () => showModalBottomSheet(
-                    context: Get.context!,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (c) => SizedBox(
-                      height: MediaQuery.of(c).size.height,
-                      child: const SettingsPlayer(isModal: true),
-                    ),
-                  ),
-                );
+                controller.isSettingsPaneOpened.value =
+                    !controller.isSettingsPaneOpened.value;
               },
             ),
             NFSheetTile(
               icon: Icons.lock_outline_rounded,
-              label: 'Lock screen',
+              label: context.l10n.lockScreen,
               onTap: () {
                 Get.back();
                 controller.isLocked.value = true;

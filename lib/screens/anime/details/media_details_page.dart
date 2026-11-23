@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'package:anymex/widgets/anymex_widgets/anymex_titlebar.dart';
@@ -48,6 +49,7 @@ import 'package:get/get.dart';
 import 'package:anymex/controllers/settings/methods.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_linear_indicator.dart';
 import 'package:anymex/widgets/animation/widget_animations.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:anymex/widgets/common/sliver_slide_fade_transition.dart';
 
 class MediaDetailsPage extends StatefulWidget {
@@ -74,6 +76,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
     with TickerProviderStateMixin {
   late final MediaDetailsController controller;
   late final RxString _posterColor;
+  late final Set<int> _visitedTabs;
   bool _isRouteAnimating = true;
   late final AnimationController _tabTransitionController;
   late final Tween<Offset> _slideOffsetTween;
@@ -149,7 +152,16 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
     _lastExtractedUrl = targetUrl;
     ImageColorExtractor.extractColor(targetUrl).then((c) {
       if (c != null && mounted) {
-        _posterColor.value = '#${c.value.toRadixString(16).padLeft(8, '0')}';
+        final hex = '#${c.value.toRadixString(16).padLeft(8, '0')}';
+        if (_isRouteAnimating) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_isRouteAnimating) {
+              _posterColor.value = hex;
+            }
+          });
+        } else {
+          _posterColor.value = hex;
+        }
       }
     });
   }
@@ -182,6 +194,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
     final initialPage = widget.scrollToCommentId != null
         ? 2
         : widget.initialTabIndex;
+    _visitedTabs = {initialPage};
     controller = Get.put(
       MediaDetailsController(
         initialMedia: widget.media,
@@ -242,6 +255,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
   }
 
   void _onTabSelected(int index) {
+    _visitedTabs.add(index);
     if (controller.selectedPage.value == index) return;
     final direction = index > controller.selectedPage.value ? 1.0 : -1.0;
     _slideOffsetTween.begin = Offset(0.06 * direction, 0.0);
@@ -293,6 +307,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
 
       Widget buildScaffold(BuildContext themedContext) {
         return AnymeXScaffold(
+          disabled: true,
           extendBehindTitleBar: true,
           color: isDetailsOled ? '' : _posterColor.value,
           isOled: isDetailsOled,
@@ -408,21 +423,32 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                             position: _tabPositionAnimation,
                             sliver: SliverMainAxisGroup(
                               slivers: [
-                                SliverVisibility(
-                                  visible: selected == 0,
-                                  maintainState: true,
-                                  sliver: _buildOverviewTab(themedContext),
-                                ),
-                                SliverVisibility(
-                                  visible: selected == 1,
-                                  maintainState: true,
-                                  sliver: _buildContentTab(themedContext),
-                                ),
-                                SliverVisibility(
-                                  visible: selected == 2,
-                                  maintainState: true,
-                                  sliver: _buildCommentsTab(themedContext),
-                                ),
+                                _visitedTabs.contains(0)
+                                    ? SliverVisibility(
+                                        visible: selected == 0,
+                                        maintainState: true,
+                                        sliver:
+                                            _buildOverviewTab(themedContext),
+                                      )
+                                    : const SliverToBoxAdapter(
+                                        child: SizedBox.shrink()),
+                                _visitedTabs.contains(1)
+                                    ? SliverVisibility(
+                                        visible: selected == 1,
+                                        maintainState: true,
+                                        sliver: _buildContentTab(themedContext),
+                                      )
+                                    : const SliverToBoxAdapter(
+                                        child: SizedBox.shrink()),
+                                _visitedTabs.contains(2)
+                                    ? SliverVisibility(
+                                        visible: selected == 2,
+                                        maintainState: true,
+                                        sliver:
+                                            _buildCommentsTab(themedContext),
+                                      )
+                                    : const SliverToBoxAdapter(
+                                        child: SizedBox.shrink()),
                               ],
                             ),
                           );
@@ -435,48 +461,59 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
             );
 
             Widget buildBlurredImage({double? height}) {
+              Widget child;
               if (blurSourceUrl.isEmpty || _isRouteAnimating) {
-                return Container(
+                child = Container(
+                  key: const ValueKey('blur_placeholder'),
                   height: height ?? double.infinity,
                   width: double.infinity,
                   color: gradientBgColor,
                 );
-              }
-              return isBaked
-                  ? BakedBlurImage(
-                      url: blurSourceUrl,
-                      fallback: blurFallbackUrl,
-                      saturation: 1.0,
-                      blurAmount: blurAmount,
-                      brightness: brightness,
-                      color: blurColor,
-                      fit: BoxFit.cover,
-                      height: height,
-                      width: double.infinity,
-                      fadeBottom: true,
-                      isMesh: isMesh,
-                    )
-                  : ColorFiltered(
-                      colorFilter: ColorFilter.matrix([
-                        brightness, 0, 0, 0, 0,
-                        0, brightness, 0, 0, 0,
-                        0, 0, brightness, 0, 0,
-                        0, 0, 0, 1, 0,
-                      ]),
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(
-                            sigmaX: blurAmount, sigmaY: blurAmount),
-                        child: AnymeXImage(
-                          imageUrl: blurSourceUrl,
-                          errorImage: blurFallbackUrl,
-                          radius: 0,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: height ?? double.infinity,
+              } else {
+                child = KeyedSubtree(
+                  key: const ValueKey('blur_actual'),
+                  child: isBaked
+                      ? BakedBlurImage(
+                          url: blurSourceUrl,
+                          fallback: blurFallbackUrl,
+                          saturation: 1.0,
+                          blurAmount: blurAmount,
+                          brightness: brightness,
                           color: blurColor,
+                          fit: BoxFit.cover,
+                          height: height,
+                          width: double.infinity,
+                          fadeBottom: true,
+                          isMesh: isMesh,
+                        )
+                      : ColorFiltered(
+                          colorFilter: ColorFilter.matrix([
+                            brightness, 0, 0, 0, 0,
+                            0, brightness, 0, 0, 0,
+                            0, 0, brightness, 0, 0,
+                            0, 0, 0, 1, 0,
+                          ]),
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(
+                                sigmaX: blurAmount, sigmaY: blurAmount),
+                            child: AnymeXImage(
+                              imageUrl: blurSourceUrl,
+                              errorImage: blurFallbackUrl,
+                              radius: 0,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: height ?? double.infinity,
+                              color: blurColor,
+                              memCacheWidth: 80,
+                            ),
+                          ),
                         ),
-                      ),
-                    );
+                );
+              }
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: child,
+              );
             }
 
             if (isDetailsOled || blurScope == 0) {
@@ -564,13 +601,15 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
         );
       }
 
-      if (posterScheme != null) {
-        return Theme(
-          data: Theme.of(context).copyWith(colorScheme: posterScheme),
-          child: Builder(builder: (ctx) => buildScaffold(ctx)),
-        );
-      }
-      return buildScaffold(context);
+      final baseTheme = Theme.of(context);
+      final effectiveTheme = posterScheme != null
+          ? baseTheme.copyWith(colorScheme: posterScheme)
+          : baseTheme;
+
+      return Theme(
+        data: effectiveTheme,
+        child: Builder(builder: (ctx) => buildScaffold(ctx)),
+      );
     });
   }
 
@@ -580,7 +619,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
       NavItem(
         selectedIcon: Iconsax.info_circle5,
         unselectedIcon: Iconsax.info_circle,
-        label: 'Info',
+        label: context.l10n.info,
         onTap: (index) => _onTabSelected(index),
       ),
       NavItem(
@@ -592,7 +631,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
       NavItem(
         selectedIcon: HugeIcons.strokeRoundedComment01,
         unselectedIcon: HugeIcons.strokeRoundedComment02,
-        label: 'Comments',
+        label: context.l10n.comments,
         onTap: (index) => _onTabSelected(index),
       ),
     ];
@@ -740,86 +779,101 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
       return SliverMainAxisGroup(
         slivers: [
           SliverToBoxAdapter(
-            child: Center(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Obx(() {
-                    if (controller.isAnilistLoading.value) {
-                      return _buildStatsShimmer(context).bottomSpacing(16);
-                    }
-                    return KeyedSubtree(
-                      key: const ValueKey('media_stats'),
-                      child: buildMediaStatsSection(context, controller)
-                          .bottomSpacing(16)
-                          .animateSection(onScroll: false),
-                    );
-                  }),
-                  Obx(() {
-                    if (controller.isAnilistLoading.value) {
-                      return _buildShimmerCarousel(context);
-                    }
-                    return KeyedSubtree(
-                      key: const ValueKey('media_characters'),
-                      child: buildCharactersSection(context, mediaData),
-                    );
-                  }),
-                  Obx(() {
-                    if (controller.isAnilistLoading.value) {
-                      return _buildShimmerCarousel(context);
-                    }
-                    if (rels.isEmpty) return const SizedBox.shrink();
-                    return KeyedSubtree(
-                      key: const ValueKey('media_relations'),
-                      child: ReusableCarousel(
-                        data: rels,
-                        title: 'Relations',
-                        variant: DataVariant.relation,
-                      ).bottomSpacing(16),
-                    );
-                  }),
-                  Obx(() {
-                    if (controller.isSecondaryLoading.value) {
-                      return _buildShimmerCarousel(context);
-                    }
-                    if (mediaData.staff == null || mediaData.staff!.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    return KeyedSubtree(
-                      key: const ValueKey('media_staff'),
-                      child: ReusableCarousel(
-                        data: mediaData.staff!,
-                        title: 'Staff',
-                        variant: DataVariant.staff,
-                      ).bottomSpacing(16),
-                    );
-                  }),
-                  Obx(() {
-                    if (controller.isAnilistLoading.value) {
-                      return _buildShimmerCarousel(context);
-                    }
-                    final recs = mediaData.recommendations;
-                    if (recs.isEmpty) return const SizedBox.shrink();
-                    return KeyedSubtree(
-                      key: const ValueKey('media_recommendations'),
-                      child: ReusableCarousel(
-                        data: recs,
-                        title: controller.isNovel
-                            ? 'Recommended Novels'
-                            : (controller.isAnime
-                                ? 'Recommended Anime'
-                                : 'Recommended Manga'),
-                        variant: DataVariant.recommendation,
-                        type: controller.isNovel
-                            ? ItemType.novel
-                            : (controller.isAnime
-                                ? ItemType.anime
-                                : ItemType.manga),
+            child: RepaintBoundary(
+              child: Obx(() {
+                if (controller.isAnilistLoading.value || _isRouteAnimating) {
+                  return _buildStatsShimmer(context).bottomSpacing(16);
+                }
+                return KeyedSubtree(
+                  key: const ValueKey('media_stats'),
+                  child: buildMediaStatsSection(context, controller)
+                      .bottomSpacing(16)
+                      .animate()
+                      .fadeIn(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
                       ),
-                    );
-                  }),
-                ],
-              ),
+                );
+              }),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: RepaintBoundary(
+              child: Obx(() {
+                if (controller.isAnilistLoading.value) {
+                  return _buildShimmerCarousel(context);
+                }
+                return KeyedSubtree(
+                  key: const ValueKey('media_characters'),
+                  child: buildCharactersSection(context, mediaData),
+                );
+              }),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: RepaintBoundary(
+              child: Obx(() {
+                if (controller.isAnilistLoading.value) {
+                  return _buildShimmerCarousel(context);
+                }
+                if (rels.isEmpty) return const SizedBox.shrink();
+                return KeyedSubtree(
+                  key: const ValueKey('media_relations'),
+                  child: ReusableCarousel(
+                    data: rels,
+                    title: context.l10n.relations,
+                    variant: DataVariant.relation,
+                  ).bottomSpacing(16),
+                );
+              }),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: RepaintBoundary(
+              child: Obx(() {
+                if (controller.isSecondaryLoading.value) {
+                  return _buildShimmerCarousel(context);
+                }
+                if (mediaData.staff == null || mediaData.staff!.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return KeyedSubtree(
+                  key: const ValueKey('media_staff'),
+                  child: ReusableCarousel(
+                    data: mediaData.staff!,
+                    title: 'Staff',
+                    variant: DataVariant.staff,
+                  ).bottomSpacing(16),
+                );
+              }),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: RepaintBoundary(
+              child: Obx(() {
+                if (controller.isAnilistLoading.value) {
+                  return _buildShimmerCarousel(context);
+                }
+                final recs = mediaData.recommendations;
+                if (recs.isEmpty) return const SizedBox.shrink();
+                return KeyedSubtree(
+                  key: const ValueKey('media_recommendations'),
+                  child: ReusableCarousel(
+                    data: recs,
+                    title: controller.isNovel
+                        ? 'Recommended Novels'
+                        : (controller.isAnime
+                            ? 'Recommended Anime'
+                            : 'Recommended Manga'),
+                    variant: DataVariant.recommendation,
+                    type: controller.isNovel
+                        ? ItemType.novel
+                        : (controller.isAnime
+                            ? ItemType.anime
+                            : ItemType.manga),
+                  ),
+                );
+              }),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 250)),
@@ -972,7 +1026,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                       Icons.sort_rounded,
                       color: colorScheme.onSurfaceVariant,
                     ),
-                    tooltip: 'Sort comments',
+                    tooltip: context.l10n.sortComments,
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: 'top',
@@ -984,7 +1038,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                             else
                               const SizedBox(width: 18),
                             const SizedBox(width: 8),
-                            const AnymeXText('Top comments', maxLines: null),
+                            AnymeXText(context.l10n.topComments, maxLines: null),
                           ],
                         ),
                       ),
@@ -998,7 +1052,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                             else
                               const SizedBox(width: 18),
                             const SizedBox(width: 8),
-                            const AnymeXText('Newest first', maxLines: null),
+                            AnymeXText(context.l10n.newestFirst, maxLines: null),
                           ],
                         ),
                       ),
@@ -1012,7 +1066,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                             else
                               const SizedBox(width: 18),
                             const SizedBox(width: 8),
-                            const AnymeXText('Oldest first', maxLines: null),
+                            AnymeXText(context.l10n.oldestFirst, maxLines: null),
                           ],
                         ),
                       ),
@@ -1021,13 +1075,13 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                   IconButton(
                     icon: const Icon(Icons.emoji_events_outlined, size: 21),
                     onPressed: () => LeaderboardSheet.show(context),
-                    tooltip: 'Leaderboard',
+                    tooltip: context.l10n.leaderboard,
                   ),
                   IconButton(
                     icon: const Icon(Icons.assignment_outlined, size: 20),
                     onPressed: () =>
                         showPolicySheet(context, PolicyType.commentRules),
-                    tooltip: 'Comment Rules',
+                    tooltip: context.l10n.commentRules,
                   ),
                   Obx(() => IconButton(
                         icon: commentCtrl.isRefreshing.value
@@ -1045,7 +1099,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                         onPressed: commentCtrl.isRefreshing.value
                             ? null
                             : () => commentCtrl.forceRefresh(),
-                        tooltip: 'Refresh comments',
+                        tooltip: context.l10n.refreshComments,
                       )),
                 ],
               ),
@@ -1098,7 +1152,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
           const SizedBox(width: 12),
           Expanded(
             child: AnymeXText(
-              'Log in to join the conversation and comment.',
+              context.l10n.logInToJoinTheConversation,
               size: 13,
               color: colorScheme.onSurfaceVariant,
               maxLines: 2,
@@ -1115,7 +1169,7 @@ class _MediaDetailsPageState extends State<MediaDetailsPage>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: AnymeXText(
-                'Log In',
+                context.l10n.logIn,
                 size: 13,
                 variant: TextVariant.semiBold,
                 color: colorScheme.onPrimary,

@@ -22,6 +22,8 @@ dependencies:
     file_picker: ^8.1.7
     flutter:
         sdk: flutter
+    flutter_localizations:
+        sdk: flutter
     flutter_dotenv: ^5.2.1
     flutter_html: ^3.0.0
     webview_all: ^1.4.7
@@ -147,6 +149,8 @@ dev_dependencies:
     inno_bundle: ^0.7.4
 
 dependency_overrides:
+  screen_brightness_windows:
+    path: packages/screen_brightness_windows
   device_apps:
     path: packages/device_apps
   media_kit:
@@ -217,7 +221,16 @@ flutter_native_splash:
         # image: assets/images/logo.png
 
 flutter:
+    generate: true
     uses-material-design: true
+
+    shaders:
+        - assets/shaders/upscale/clamp_highlights.frag
+        - assets/shaders/upscale/edge_sharpen.frag
+        - assets/shaders/upscale/soft_smooth.frag
+        - assets/shaders/upscale/bilateral_denoise.frag
+        - assets/shaders/upscale/bicubic_x2.frag
+        - assets/shaders/upscale/anymex_sharpen.frag
 
     assets:
         - assets/images/

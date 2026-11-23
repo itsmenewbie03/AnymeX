@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:async';
 import 'package:anymex/database/database.dart';
 import 'package:anymex/widgets/common/anymex_pills.dart';
@@ -50,10 +51,10 @@ class _ExtensionScreenState extends State<ExtensionScreen>
   late final ScrollController _appBarScrollController;
   final ValueNotifier<bool> _isAppBarVisible = ValueNotifier<bool>(true);
 
-  static const _contentTabs = [
-    (label: 'Anime', icon: Icons.movie_creation_outlined, type: ItemType.anime),
-    (label: 'Manga', icon: Icons.menu_book_outlined, type: ItemType.manga),
-    (label: 'Novel', icon: Icons.auto_stories_outlined, type: ItemType.novel),
+  static List<({String label, IconData icon, ItemType type})> get _contentTabs => [
+    (label: Get.context!.l10n.anime, icon: Icons.movie_creation_outlined, type: ItemType.anime),
+    (label: Get.context!.l10n.manga, icon: Icons.menu_book_outlined, type: ItemType.manga),
+    (label: Get.context!.l10n.novel, icon: Icons.auto_stories_outlined, type: ItemType.novel),
   ];
 
   @override
@@ -91,13 +92,14 @@ class _ExtensionScreenState extends State<ExtensionScreen>
     const appBarHeight = kToolbarHeight + 20;
 
     final mainContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.isTabScreen) ...[
           if (isDesktop) ...[
             const SizedBox(height: 10),
             Header(
-              title: 'Extensions',
-              subtitle: 'Manage plugins & sources',
+              title: context.l10n.extensions,
+              subtitle: context.l10n.managePluginsSources,
               actions: [
                 HeaderActionButton(
                   icon: HugeIcons.strokeRoundedPlug01,
@@ -119,7 +121,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
           ]
         ] else ...[
           NestedHeader(
-            title: 'Extensions',
+            title: context.l10n.extensions,
             action: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -127,7 +129,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
                   icon: Icon(HugeIcons.strokeRoundedPlug01,
                       color: theme.primary, size: 20),
                   onPressed: () => navigate(() => const SettingsAddons()),
-                  tooltip: "Add-ons",
+                  tooltip: context.l10n.addOns,
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(6),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -138,7 +140,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
                   icon: Icon(Icons.build_outlined,
                       color: theme.primary, size: 20),
                   onPressed: () => navigate(() => const ExtensionTestPage()),
-                  tooltip: "Test Extensions",
+                  tooltip: context.l10n.testExtensions,
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(6),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -149,7 +151,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
                   icon: Icon(HugeIcons.strokeRoundedGithub,
                       color: theme.primary, size: 20),
                   onPressed: () => navigate(() => const SettingsExtensions()),
-                  tooltip: "Repositories",
+                  tooltip: context.l10n.repositories,
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(6),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -188,8 +190,8 @@ class _ExtensionScreenState extends State<ExtensionScreen>
                 isVisible: _isAppBarVisible,
                 scrollController: _appBarScrollController,
                 headerContent: Header(
-                  title: 'Extensions',
-                  subtitle: 'Manage plugins & sources',
+                  title: context.l10n.extensions,
+                  subtitle: context.l10n.managePluginsSources,
                   actions: [
                     HeaderActionButton(
                       icon: HugeIcons.strokeRoundedPlug01,
@@ -232,7 +234,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
   Widget _buildContentTypeBar() {
     return Obx(() {
       final selected = _selectedContentType.value;
-      const tabs = _contentTabs;
+      final tabs = _contentTabs;
       final selectedIndex = tabs.indexWhere((t) => t.type == selected);
 
       return AnymeXTabBar(
@@ -287,7 +289,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
               controller: _textEditingController,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search extensions...',
+                hintText: context.l10n.searchExtensionsEllipsis,
                 hintStyle: TextStyle(
                   color: context.colors.onSurface.withOpacity(0.4),
                   fontSize: 14,
@@ -352,7 +354,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
                           ? context.colors.primary
                           : context.colors.onSurface.withOpacity(0.55),
                     ),
-                    tooltip: 'Select Language',
+                    tooltip: context.l10n.selectLanguage,
                     padding: EdgeInsets.zero,
                   ),
                 ),
@@ -386,7 +388,7 @@ class _ExtensionScreenState extends State<ExtensionScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AnymeXDialog(
-          title: 'Select Language',
+          title: context.l10n.selectLanguage,
           onConfirm: () {
             _selectedLanguage.value = tempLang;
           },
@@ -486,28 +488,33 @@ class _ExtensionScreenState extends State<ExtensionScreen>
           height: 38,
           margin: const EdgeInsets.only(top: 8, bottom: 8),
           padding: const EdgeInsets.only(left: 16),
-          child: AnymeXPills(
-            items: filteredSourceTypes.map((e) {
-              final type = e;
-              final needsPlugin =
-                  _typeRequiresPlugin(type) && !_isPluginInstalled;
-              final isSelected = !needsPlugin && selectedType == type;
-              final label = type == 'all' ? 'All' : type;
-              final iconUrl = _getManagerIcon(type);
+          alignment: Alignment.centerLeft,
+          width: double.infinity,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AnymeXPills(
+              items: filteredSourceTypes.map((e) {
+                final type = e;
+                final needsPlugin =
+                    _typeRequiresPlugin(type) && !_isPluginInstalled;
+                final isSelected = !needsPlugin && selectedType == type;
+                final label = type == 'all' ? 'All' : type;
+                final iconUrl = _getManagerIcon(type);
 
-              return PillItem(
-                  iconUrl: iconUrl,
-                  icon: type == 'all' ? HugeIcons.strokeRoundedPlug01 : null,
-                  label: label,
-                  isSelected: isSelected,
-                  onTap: needsPlugin
-                      ? () {
-                          navigate(() => const SettingsExtensionManager());
-                        }
-                      : () {
-                          _selectedSourceType.value = type;
-                        });
-            }).toList(),
+                return PillItem(
+                    iconUrl: iconUrl,
+                    icon: type == 'all' ? HugeIcons.strokeRoundedPlug01 : null,
+                    label: label,
+                    isSelected: isSelected,
+                    onTap: needsPlugin
+                        ? () {
+                            navigate(() => const SettingsExtensionManager());
+                          }
+                        : () {
+                            _selectedSourceType.value = type;
+                          });
+              }).toList(),
+            ),
           ));
     });
   }

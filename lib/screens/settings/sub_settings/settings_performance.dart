@@ -1,10 +1,13 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:io';
 
 import 'package:anymex/controllers/settings/settings.dart';
+import 'package:anymex/database/kv_helper.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_section_builder.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_tile.dart';
 import 'package:anymex/widgets/common/anymex_scaffold.dart';
+import 'package:anymex/widgets/common/fps_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:get/get.dart';
@@ -98,22 +101,47 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
   @override
   Widget build(BuildContext context) {
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-      return const AnymeXScaffold(
+      return AnymeXScaffold(
         showHeader: true,
-        headerTitle: 'Performance',
-        body: Center(
-          child: AnymeXText(
-              'Display mode tuning is not applicable on desktop platforms.'),
+        headerTitle: context.l10n.performance,
+        body: Builder(
+          builder: (ctx) => SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+                16.0, AnymeXHeaderScope.of(ctx), 16.0, 30.0),
+            child: Column(
+              children: [
+                AnymeXSectionBuilder(
+                  title: 'Monitoring',
+                  children: [
+                    AnymeXTile.toggle(
+                      icon: HugeIcons.strokeRoundedDashboardSpeed01,
+                      title: 'FPS Meter',
+                      subtitle: 'Show draggable real-time FPS overlay',
+                      value: KvHelper.get<bool>('show_fps_meter',
+                          defaultVal: false),
+                      onChanged: (val) {
+                        KvHelper.set('show_fps_meter', val);
+                        FpsMeter.isVisible.value = val;
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child:
+                      AnymeXText(context.l10n.displayModeTuningIsNotApplicable),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
     final validModes = _supportedModes
         .where((m) =>
-            m != DisplayMode.auto &&
-            m.id != 0 &&
-            m.width != 0 &&
-            m.height != 0)
+            m != DisplayMode.auto && m.id != 0 && m.width != 0 && m.height != 0)
         .toList();
 
     final resolutions =
@@ -128,11 +156,11 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
 
     return AnymeXScaffold(
       showHeader: true,
-      headerTitle: 'Performance',
+      headerTitle: context.l10n.performance,
       body: Builder(
         builder: (ctx) => SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-              16.0, AnymeXHeaderScope.of(ctx), 16.0, 30.0),
+          padding:
+              EdgeInsets.fromLTRB(16.0, AnymeXHeaderScope.of(ctx), 16.0, 30.0),
           child: Obx(() {
             final preferred = settings.preferredDisplayMode.value;
             final active = settings.activeDisplayMode.value;
@@ -154,12 +182,13 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
                 .where((m) => '${m.width}x${m.height}' == currentRes)
                 .toList();
 
-            final distinctHz =
-                (modesForRes.isNotEmpty ? modesForRes : validModes)
-                    .map((m) => m.refreshRate.round())
-                    .toSet()
-                    .toList()
-                  ..sort();
+            final distinctHz = (modesForRes.isNotEmpty
+                    ? modesForRes
+                    : validModes)
+                .map((m) => m.refreshRate.round())
+                .toSet()
+                .toList()
+              ..sort();
 
             final hzOptions = [0, ...distinctHz];
 
@@ -174,6 +203,24 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                AnymeXSectionBuilder(
+                  title: 'Monitoring',
+                  children: [
+                    AnymeXTile.toggle(
+                      icon: HugeIcons.strokeRoundedDashboardSpeed01,
+                      title: 'FPS Meter',
+                      subtitle: 'Show draggable real-time FPS overlay',
+                      value: KvHelper.get<bool>('show_fps_meter',
+                          defaultVal: false),
+                      onChanged: (val) {
+                        KvHelper.set('show_fps_meter', val);
+                        FpsMeter.isVisible.value = val;
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 if (_isLoading) ...[
                   const Center(
                     child: Padding(
@@ -182,20 +229,19 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
                     ),
                   ),
                 ] else if (validModes.isEmpty) ...[
-                  const AnymeXTile(
+                  AnymeXTile(
                     icon: Icons.info_outline_rounded,
-                    title: 'Display Mode',
-                    subtitle:
-                        'Hardware display mode switching is not supported by your device.',
+                    title: context.l10n.displayMode,
+                    subtitle: context.l10n.hardwareDisplayModeSwitchingIsNot,
                   ),
                 ] else ...[
                   AnymeXSectionBuilder(
-                    title: 'Display',
+                    title: context.l10n.display,
                     children: [
                       if (resolutions.length > 1)
                         AnymeXTile.pills<String>(
                           icon: Icons.aspect_ratio_rounded,
-                          title: 'Resolution',
+                          title: context.l10n.resolution,
                           value: currentRes,
                           options: resolutions,
                           optionLabelTransformer: (res) => res,
@@ -205,12 +251,12 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
                       else if (resolutions.isNotEmpty)
                         AnymeXTile(
                           icon: Icons.aspect_ratio_rounded,
-                          title: 'Resolution',
+                          title: context.l10n.resolution,
                           subtitle: resolutions.first,
                         ),
                       AnymeXTile.pills<int>(
                         icon: HugeIcons.strokeRoundedDashboardSpeed01,
-                        title: 'Refresh Rate',
+                        title: context.l10n.refreshRate,
                         value: currentHz,
                         options: hzOptions,
                         optionLabelTransformer: (hz) =>
@@ -233,7 +279,7 @@ class _SettingsPerformanceState extends State<SettingsPerformance> {
                       ),
                       AnymeXTile(
                         icon: Icons.layers_outlined,
-                        title: 'Supported Modes',
+                        title: context.l10n.supportedModes,
                         subtitle: '${validModes.length} modes',
                       ),
                     ],

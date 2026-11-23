@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -6,7 +7,6 @@ import 'package:anymex/screens/anime/watch/controller/player_controller.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/control_button.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/decoder_quick_button.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/player_control_buttons.dart';
-import 'package:anymex/screens/settings/sub_settings/settings_player.dart';
 import 'package:anymex/utils/function.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -117,7 +117,7 @@ class TopControls extends StatelessWidget {
           ControlButton(
             icon: Icons.arrow_back_ios_rounded,
             onPressed: () => _handleBack(),
-            tooltip: 'Back',
+            tooltip: Get.context!.l10n.back,
             isPrimary: true,
           ),
           const SizedBox(width: 20),
@@ -257,7 +257,7 @@ class TopControls extends StatelessWidget {
                 ControlButton(
                   icon: Icons.arrow_back_ios_rounded,
                   onPressed: () => _handleBack(),
-                  tooltip: 'Back',
+                  tooltip: Get.context!.l10n.back,
                   isPrimary: true,
                 ),
                 const SizedBox(width: 24),
@@ -380,33 +380,18 @@ class TopControls extends StatelessWidget {
               ControlButton(
                 icon: Icons.fullscreen_rounded,
                 onPressed: () => controller.toggleFullScreen(),
-                tooltip: 'Fullscreen',
+                tooltip: Get.context!.l10n.fullscreen,
                 compact: true,
               ),
               const SizedBox(width: 8),
               ControlButton(
                 icon: Icons.settings_rounded,
                 onPressed: () {
-                  Get.find<PlayerController>().showSheetWithPause(
-                    () => showModalBottomSheet(
-                        context: Get.context!,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => Container(
-                              height: MediaQuery.sizeOf(context).height,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: const BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(28)),
-                              ),
-                              child: const SettingsPlayer(
-                                isModal: true,
-                              ),
-                            )),
-                  );
+                  final player = Get.find<PlayerController>();
+                  player.isSettingsPaneOpened.value =
+                      !player.isSettingsPaneOpened.value;
                 },
-                tooltip: 'Settings',
+                tooltip: Get.context!.l10n.settings,
                 compact: true,
               ),
             ],
@@ -439,7 +424,7 @@ class TopControls extends StatelessWidget {
               ControlButton(
                 icon: Icons.arrow_back_ios_rounded,
                 onPressed: () => _handleBack(),
-                tooltip: 'Back',
+                tooltip: Get.context!.l10n.back,
                 isPrimary: true,
               ),
               const Spacer(),
@@ -451,7 +436,7 @@ class TopControls extends StatelessWidget {
               ControlButton(
                 icon: Icons.lock_rounded,
                 onPressed: () => controller.isLocked.value = true,
-                tooltip: 'Lock Controls',
+                tooltip: Get.context!.l10n.lockControls,
                 compact: true,
               ),
               const SizedBox(width: 8),
@@ -459,32 +444,18 @@ class TopControls extends StatelessWidget {
                 ControlButton(
                   icon: Icons.picture_in_picture_rounded,
                   onPressed: () => controller.enterPip(),
-                  tooltip: 'Picture in Picture',
+                  tooltip: Get.context!.l10n.pictureInPicture,
                   compact: true,
                 ),
               const SizedBox(width: 8),
               ControlButton(
                 icon: Icons.settings_rounded,
                 onPressed: () {
-                  Get.find<PlayerController>().showSheetWithPause(
-                    () => showModalBottomSheet(
-                      context: Get.context!,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => Container(
-                        height: MediaQuery.sizeOf(context).height,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(28)),
-                        ),
-                        child: const SettingsPlayer(isModal: true),
-                      ),
-                    ),
-                  );
+                  final player = Get.find<PlayerController>();
+                  player.isSettingsPaneOpened.value =
+                      !player.isSettingsPaneOpened.value;
                 },
-                tooltip: 'Settings',
+                tooltip: Get.context!.l10n.settings,
                 compact: true,
               ),
             ],
@@ -670,7 +641,7 @@ class _UnlockButtonState extends State<_UnlockButton> {
               if (_confirm) ...[
                 const SizedBox(width: 8),
                 AnymeXText(
-                  "Are you sure?",
+                  context.l10n.areYouSure,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,

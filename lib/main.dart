@@ -38,6 +38,7 @@ import 'package:anymex/screens/library/history_page.dart';
 import 'package:anymex/screens/search/search_view.dart';
 import 'package:anymex/screens/manga/home_page.dart';
 import 'package:anymex/screens/novel/home_page.dart';
+import 'package:anymex/services/upscale/shader_registry.dart';
 import 'package:anymex/widgets/common/lazy_indexed_stack.dart';
 import 'package:anymex/widgets/common/media_mode_selector.dart';
 import 'package:anymex/widgets/common/home_continue_button.dart';
@@ -54,6 +55,7 @@ import 'package:anymex/utils/deeplink.dart';
 import 'package:anymex/utils/external_font_loader.dart';
 import 'package:anymex/utils/register_protocol/register_protocol.dart';
 import 'package:anymex/widgets/common/anymex_scaffold.dart';
+import 'package:anymex/widgets/common/fps_meter.dart';
 import 'package:anymex/widgets/common/navbar.dart';
 import 'package:anymex_extension_runtime_bridge/Models/Source.dart';
 import 'package:anymex_extension_runtime_bridge/anymex_extension_runtime_bridge.dart';
@@ -78,6 +80,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:isar_community/isar.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:anymex/l10n/app_localizations.dart';
+import 'package:anymex/l10n/english_framework_delegates.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
+import 'package:anymex/l10n/locale_controller.dart';
 
 late Isar isar;
 final appLinks = AppLinks();
@@ -173,6 +179,9 @@ void main(List<String> args) async {
 
     await safeCall(() => Rhttp.init(),
         errorMessage: 'Failed to initialize Rhttp');
+
+    await safeCall(() => ShaderRegistry.load(),
+        errorMessage: 'Failed to load upscale shaders');
 
     await safeCall(() => dotenv.load(fileName: '.env'),
         errorMessage: 'Failed to load .env file');
@@ -289,6 +298,7 @@ void _initializeGetxController() async {
   await safeCall(() {
     Get.put(ThemeController(), permanent: true);
     Get.put(Settings());
+    Get.put(LocaleController());
     Get.put(OfflineStorageController());
     Get.put(AnilistAuth());
     Get.put(CommunityService());
@@ -375,7 +385,7 @@ class _MainAppState extends State<MainApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         const assetImages = [
-          'assets/images/bg_glass.webp',
+          'assets/images/bg_glass.png',
           'assets/images/logo.png',
           'assets/images/logo_transparent.webp',
           'assets/images/anilist-icon.png',
@@ -425,6 +435,12 @@ class _MainAppState extends State<MainApp> {
           scrollBehavior: MyCustomScrollBehavior(),
           debugShowCheckedModeBanner: false,
           title: "AnymeX",
+          localizationsDelegates: const [
+            ...AppLocalizations.localizationsDelegates,
+            EnglishMaterialDelegate(),
+            EnglishCupertinoDelegate(),
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: themeCtrl.lightTheme,
           darkTheme: themeCtrl.darkTheme,
           themeMode: themeCtrl.themeMode,
@@ -432,45 +448,59 @@ class _MainAppState extends State<MainApp> {
               _showMainApp ? const FilterScreen() : const AnymeXSplashScreen(),
           builder: (context, child) {
             if (child == null) return const SizedBox.shrink();
-            final mediaQuery = MediaQuery.of(context);
+            final isDesktop = Platform.isWindows;
             final userScale = themeCtrl.fontScale;
+            final isDefaultScale = (userScale - 1.0).abs() < 0.001;
+
+            if (PlatformDispatcher.instance.views.length > 1) {
+              if (isDefaultScale) return child;
+              final mediaQuery = MediaQuery.of(context);
+              final clampedMediaQuery = mediaQuery.copyWith(
+                textScaler: TextScaler.linear(
+                  (mediaQuery.textScaler.scale(1.0) * userScale)
+                      .clamp(0.70, 1.80),
+                ),
+              );
+              return MediaQuery(
+                data: clampedMediaQuery,
+                child: child,
+              );
+            }
+
+            final content = isDesktop
+                ? Stack(
+                    children: [
+                      RepaintBoundary(child: child),
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: AnymeXTitleBar.titleBar(),
+                      ),
+                      const FpsMeter(),
+                    ],
+                  )
+                : Stack(
+                    children: [
+                      child,
+                      const FpsMeter(),
+                    ],
+                  );
+
+            if (isDefaultScale) {
+              return content;
+            }
+
+            final mediaQuery = MediaQuery.of(context);
             final clampedMediaQuery = mediaQuery.copyWith(
               textScaler: TextScaler.linear(
                 (mediaQuery.textScaler.scale(1.0) * userScale)
                     .clamp(0.70, 1.80),
               ),
             );
-            if (PlatformDispatcher.instance.views.length > 1) {
-              return MediaQuery(
-                data: clampedMediaQuery,
-                child: child,
-              );
-            }
-            final isDesktop = Platform.isWindows;
-
-            if (isDesktop) {
-              return MediaQuery(
-                data: clampedMediaQuery,
-                child: Stack(
-                  children: [
-                    RepaintBoundary(child: child),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: AnymeXTitleBar.titleBar(),
-                    ),
-                  ],
-                ),
-              );
-            }
             return MediaQuery(
               data: clampedMediaQuery,
-              child: Stack(
-                children: [
-                  child,
-                ],
-              ),
+              child: content,
             );
           },
           enableLog: true,
@@ -625,7 +655,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: IconlyLight.home,
           selectedIcon: IconlyBold.home,
           onTap: onTap,
-          label: 'Home',
+          label: context.l10n.navHome,
           subWidget: subWidget,
         );
       case 'Discover':
@@ -633,7 +663,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: Iconsax.discover_13,
           selectedIcon: Iconsax.discover5,
           onTap: onTap,
-          label: 'Discover',
+          label: context.l10n.navDiscover,
           subWidget: subWidget,
         );
       case 'Search':
@@ -641,7 +671,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: IconlyLight.search,
           selectedIcon: IconlyBold.search,
           onTap: onTap,
-          label: 'Search',
+          label: context.l10n.navSearch,
           subWidget: subWidget,
         );
       case 'Library':
@@ -649,7 +679,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: HugeIcons.strokeRoundedLibrary,
           selectedIcon: HugeIcons.strokeRoundedLibrary,
           onTap: onTap,
-          label: 'Library',
+          label: context.l10n.navLibrary,
           subWidget: subWidget,
         );
       case 'History':
@@ -657,7 +687,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: Iconsax.clock,
           selectedIcon: Iconsax.clock5,
           onTap: onTap,
-          label: 'History',
+          label: context.l10n.navHistory,
           subWidget: subWidget,
         );
       case 'Anime':
@@ -665,7 +695,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: Icons.movie_filter_outlined,
           selectedIcon: Icons.movie_filter_rounded,
           onTap: onTap,
-          label: isSimkl ? 'Movies' : 'Anime',
+          label: isSimkl ? context.l10n.navMovies : context.l10n.navAnime,
           subWidget: subWidget,
         );
       case 'Manga':
@@ -673,7 +703,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: isSimkl ? Iconsax.monitor : Iconsax.book,
           selectedIcon: isSimkl ? Iconsax.monitor5 : Iconsax.book,
           onTap: onTap,
-          label: isSimkl ? 'Series' : 'Manga',
+          label: isSimkl ? context.l10n.navSeries : context.l10n.navManga,
           subWidget: subWidget,
         );
       case 'Novel':
@@ -681,7 +711,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: Icons.auto_stories_outlined,
           selectedIcon: Icons.auto_stories_rounded,
           onTap: onTap,
-          label: 'Novel',
+          label: context.l10n.navNovel,
           subWidget: subWidget,
         );
       case 'Extensions':
@@ -689,7 +719,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: Icons.extension_outlined,
           selectedIcon: Icons.extension_rounded,
           onTap: onTap,
-          label: 'Extensions',
+          label: context.l10n.navExtensions,
           subWidget: subWidget,
         );
       case 'Stats':
@@ -697,7 +727,7 @@ class _FilterScreenState extends State<FilterScreen> {
           unselectedIcon: IconlyLight.chart,
           selectedIcon: IconlyBold.chart,
           onTap: onTap,
-          label: 'Stats',
+          label: context.l10n.navStats,
           subWidget: subWidget,
         );
       default:
@@ -740,6 +770,7 @@ class _FilterScreenState extends State<FilterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Obx(() {
+            Get.find<LocaleController>().currentLocale.value;
             final mediaModeController = Get.put(MediaModeController());
             final _ = mediaModeController.rxMode.value;
             final isSimkl = authService.serviceType.value == ServicesType.simkl;
@@ -763,7 +794,7 @@ class _FilterScreenState extends State<FilterScreen> {
                             onTap: (index) {
                               return SettingsSheet.show(context);
                             },
-                            label: 'Profile',
+                            label: context.l10n.navProfile,
                             altIcon: Obx(() {
                               final count = Get.find<SourceController>()
                                   .extensionUpdatesCount
@@ -853,6 +884,7 @@ class _FilterScreenState extends State<FilterScreen> {
   Widget _buildAndroidLayout(ServiceHandler authService) {
     final settings = Get.find<Settings>();
     return Obx(() {
+      Get.find<LocaleController>().currentLocale.value;
       final isSimkl = authService.serviceType.value == ServicesType.simkl;
       final navTabs = _getNavTabs(authService, settings);
       final mobileRoutes = [

@@ -39,6 +39,8 @@ enum General {
   dontShowDonationDialog,
   hasShownHomeDonationDialog,
   watchedAdsCount,
+  appLanguageCode,
+  appCountryCode,
 }
 
 enum ThemeKeys {
@@ -114,6 +116,12 @@ enum ReaderKeys {
   imageFilterQuality,
   fitToScreen,
   navigateByNumber,
+  upscalingEnabled,
+  upscalerShader,
+  upscalerProfile,
+  upscalerSharpness,
+  upscalerDenoise,
+  customGlslShaders,
 }
 
 enum NovelReaderKeys {

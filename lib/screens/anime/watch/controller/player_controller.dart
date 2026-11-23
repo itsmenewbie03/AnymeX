@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -30,7 +31,6 @@ import 'package:anymex/screens/anime/watch/player/base_player.dart';
 import 'package:anymex/screens/anime/watch/player/media_kit_player.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_media_session/flutter_media_session.dart';
-import 'package:flutter_media_session/flutter_media_session_platform_interface.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:anymex/utils/aniskip.dart' as aniskip;
@@ -252,6 +252,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
   final Rx<bool> isAudioPaneOpened = false.obs;
   final Rx<bool> isSyncSubsPaneOpened = false.obs;
   final Rx<bool> isSettingsPaneOpened = false.obs;
+  final Rx<bool> isCastPaneOpened = false.obs;
   final RxList<model.Track> localSubtitles = <model.Track>[].obs;
   final RxList<SubtitleCue> parsedSubtitleCues = <SubtitleCue>[].obs;
   final Rx<bool> isEpisodePaneOpened = false.obs;
@@ -1666,7 +1667,10 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
             !isSyncSubsPaneOpened.value &&
             !isEpisodePaneOpened.value &&
             !isTorrentFilesPaneOpened.value &&
-            !isWatchTogetherPaneOpened.value) {
+            !isWatchTogetherPaneOpened.value &&
+            !isSpeedPaneOpened.value &&
+            !isSettingsPaneOpened.value &&
+            !isCastPaneOpened.value) {
           showControls.value = false;
         }
       });
@@ -1748,6 +1752,8 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       isSpeedPaneOpened.value = false;
       isWatchTogetherPaneOpened.value = false;
       isTorrentFilesPaneOpened.value = false;
+      isSettingsPaneOpened.value = false;
+      isCastPaneOpened.value = false;
       currentEpisode.value = episode;
       _hasTrackedCompletedOnline = false;
       final stamp = DynamicKeys.offlineVideoProgress.get<int?>(videoPath, null);
@@ -2869,6 +2875,8 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     isSpeedPaneOpened.value = false;
     isWatchTogetherPaneOpened.value = false;
     isTorrentFilesPaneOpened.value = false;
+    isSettingsPaneOpened.value = false;
+    isCastPaneOpened.value = false;
     resetListeners();
     fetchEpisode(episode);
     _updateMediaSessionMetadata();
@@ -2879,6 +2887,19 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     currentPosition.value = Duration.zero;
     episodeDuration.value = Duration.zero;
     bufferred.value = Duration.zero;
+  }
+
+  void closePanes() {
+    isEpisodePaneOpened.value = false;
+    isSourcePaneOpened.value = false;
+    isTracksPaneOpened.value = false;
+    isAudioPaneOpened.value = false;
+    isSyncSubsPaneOpened.value = false;
+    isSpeedPaneOpened.value = false;
+    isWatchTogetherPaneOpened.value = false;
+    isTorrentFilesPaneOpened.value = false;
+    isSettingsPaneOpened.value = false;
+    isCastPaneOpened.value = false;
   }
 
   void openColorProfileBottomSheet(BuildContext context) {
@@ -2931,7 +2952,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     final url = selectedVideo.value?.url;
     if (url == null || url.isEmpty) {
       AnymeXToast.show(
-        message: 'No stream URL available',
+        message: Get.context!.l10n.noStreamUrlAvailable,
         duration: const Duration(seconds: 2),
       );
       return;
@@ -2941,14 +2962,14 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
     final headers = selectedVideo.value?.headers;
     AnymeXToast.show(
-      message: 'Opening in external player...',
+      message: Get.context!.l10n.openingInExternalPlayer,
       duration: const Duration(seconds: 2),
     );
 
     final success = await ExternalPlayer.launch(url, headers: headers);
     if (!success) {
       AnymeXToast.show(
-        message: 'Failed to launch external player',
+        message: Get.context!.l10n.failedToLaunchExternalPlayer,
         duration: const Duration(seconds: 2),
       );
     }

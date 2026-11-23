@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:convert';
 import 'dart:math' show min;
 
@@ -151,7 +152,7 @@ class AnilistData extends GetxController implements BaseService, OnlineService {
                             height: buttonHeight,
                             tagIcon: Icons.movie_filter_outlined,
                             subText: '${anilistAuth.animeList.length} items',
-                            buttonText: "ANIME LIST",
+                            buttonText: context.l10n.animeList,
                             backgroundImage: animeButtonMedia?.cover ?? '',
                             borderRadius: 16.multiplyRadius(),
                             onPressed: () => navigate(() => AnimeList(data: anilistAuth.animeList.removeDupes())),
@@ -166,7 +167,7 @@ class AnilistData extends GetxController implements BaseService, OnlineService {
                             height: buttonHeight,
                             tagIcon: Icons.book_outlined,
                             subText: '${anilistAuth.mangaList.length} items',
-                            buttonText: "MANGA LIST",
+                            buttonText: context.l10n.mangaList,
                             backgroundImage: mangaButtonMedia?.cover ?? '',
                             borderRadius: 16.multiplyRadius(),
                             onPressed: () =>
@@ -186,7 +187,7 @@ class AnilistData extends GetxController implements BaseService, OnlineService {
                     child: ImageButton(
                       height: buttonHeight,
                       subText: 'Calendar, AI Picks and more',
-                      buttonText: "OTHER",
+                      buttonText: context.l10n.otherUpper,
                       borderRadius: 16.multiplyRadius(),
                       backgroundImage: otherButtonMedia?.cover ?? '',
                       onPressed: () =>
@@ -248,7 +249,7 @@ class AnilistData extends GetxController implements BaseService, OnlineService {
                     ? recAnimes.where((e) => !ids.contains(e.id)).toList()
                     : recAnimes;
                 return ReusableCarousel(
-                  title: "Recommended Anime",
+                  title: context.l10n.recommendedAnime,
                   data: data,
                   type: ItemType.anime,
                 );
@@ -262,7 +263,7 @@ class AnilistData extends GetxController implements BaseService, OnlineService {
                     ? recMangas.where((e) => !ids.contains(e.id)).toList()
                     : recMangas;
                 return ReusableCarousel(
-                  title: "Recommended Manga",
+                  title: context.l10n.recommendedManga,
                   data: data,
                   type: ItemType.manga,
                 );
@@ -1336,6 +1337,15 @@ averageScore
   }
 
   Future<void> fetchSecondaryDetails(String id, Media media) async {
+    final cachedData = await AnilistCache.instance.get('media_details_$id');
+    if (cachedData is Map<String, dynamic> &&
+        cachedData['relations'] != null &&
+        cachedData['recommendations'] != null) {
+      media.mergeSecondaryData(cachedData, pageJson: cachedData['page']);
+      cacheController.addCache(cachedData, ServicesType.anilist);
+      return;
+    }
+
     const String url = 'https://graphql.anilist.co/';
     final Map<String, dynamic> variables = {
       'id': int.parse(id),
@@ -1377,12 +1387,16 @@ averageScore
           if (mediaJson['staffPreview'] != null) {
             cached['staffPreview'] = mediaJson['staffPreview'];
           }
+          if (page != null) {
+            cached['page'] = page;
+          }
           AnilistCache.instance.put(
             'media_details_$id',
             cached,
             ttl: const Duration(hours: 12),
             persist: true,
           );
+          cacheController.addCache(cached, ServicesType.anilist);
         }
         Logger.i('Secondary Data Loaded for id: $id');
       } else {
