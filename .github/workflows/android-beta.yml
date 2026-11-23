@@ -170,7 +170,7 @@ jobs:
             cert=$(
               "$apksigner" verify --verbose --print-certs "$apk" 2>&1 \
                 | awk -F': ' \
-                    '/certificate SHA-256 digest/ {print tolower($2); exit}'
+                    '/certificate SHA-256 digest/ {print tolower($NF); exit}'
             )
 
             echo "APK: $apk"
