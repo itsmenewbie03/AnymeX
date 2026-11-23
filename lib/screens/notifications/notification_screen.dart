@@ -286,6 +286,9 @@ class NotificationScreen extends GetView<NotificationController> {
       }
 
       final items = controller.filteredAnilistNotifications;
+      final unreadIds = controller.unreadAnilistNotificationIds(
+        anilistAuth.unreadAnilistCount.value,
+      );
 
       return Column(
         children: [
@@ -375,6 +378,7 @@ class NotificationScreen extends GetView<NotificationController> {
                           final item = items[index];
                           return _AnilistNotificationCard(
                             notification: item,
+                            isUnread: unreadIds.contains(item.id),
                             onTap: () => _handleAnilistTap(item),
                           );
                         },
@@ -1330,10 +1334,12 @@ class _AvatarWithBadge extends StatelessWidget {
 
 class _AnilistNotificationCard extends StatelessWidget {
   final AnilistNotificationItem notification;
+  final bool isUnread;
   final VoidCallback onTap;
 
   const _AnilistNotificationCard({
     required this.notification,
+    required this.isUnread,
     required this.onTap,
   });
 
@@ -1351,10 +1357,15 @@ class _AnilistNotificationCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.opaque(0.2),
+            color: isUnread
+                ? colorScheme.primaryContainer.opaque(0.32)
+                : colorScheme.surfaceContainerHighest.opaque(0.2),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: colorScheme.outlineVariant.opaque(0.12),
+              color: isUnread
+                  ? colorScheme.primary.opaque(0.55)
+                  : colorScheme.outlineVariant.opaque(0.12),
+              width: isUnread ? 1.25 : 1,
             ),
           ),
           child: Row(
@@ -1421,6 +1432,23 @@ class _AnilistNotificationCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
+                        if (isUnread) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: AnymeXText(
+                              'NEW',
+                              variant: TextVariant.bold,
+                              size: 9,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
                         AnymeXText(
                           notification.timeAgo,
                           variant: TextVariant.regular,

@@ -79,6 +79,17 @@ class NotificationController extends GetxController {
     }).toList();
   }
 
+  Set<int> unreadAnilistNotificationIds(int unreadCount) {
+    if (unreadCount <= 0) return const <int>{};
+
+    // AniList exposes only a global unread count, so infer unread state from
+    // the newest notifications in this already newest-first collection.
+    return anilistNotifications
+        .take(unreadCount)
+        .map((notification) => notification.id)
+        .toSet();
+  }
+
   int countForAnilistCategory(String category) {
     if (category == 'all') return anilistNotifications.length;
     return anilistNotifications.where((n) {
