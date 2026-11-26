@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:anymex/controllers/service_handler/service_handler.dart';
 import 'package:anymex/controllers/settings/settings.dart';
+import 'package:anymex/models/ui/ui_adaptor.dart';
 import 'package:anymex/screens/settings/sub_settings/card_customizer_page.dart';
 import 'package:anymex/screens/settings/sub_settings/settings_ui_components.dart';
 import 'package:anymex/screens/settings/sub_settings/settings_ui_details.dart';
@@ -50,6 +51,15 @@ class _SettingsUiState extends State<SettingsUi> {
       case 'animation':
         settings.animationDuration = value.toInt();
     }
+  }
+
+  void _restoreVisualEffectsDefaults() {
+    final defaults = UISettings();
+    settings.glowMultiplier = defaults.glowMultiplier;
+    settings.radiusMultiplier = defaults.radiusMultiplier;
+    settings.blurMultiplier = defaults.blurMultipler;
+    settings.cardRoundness = defaults.cardRoundness;
+    settings.animationDuration = defaults.animationDuration;
   }
 
   @override
@@ -255,6 +265,12 @@ class _SettingsUiState extends State<SettingsUi> {
                             valueTransformer: (v) => "${v.toInt()}ms",
                             onChanged: (value) =>
                                 handleSliderChange('animation', value),
+                          ),
+                          AnymeXTile(
+                            icon: HugeIcons.strokeRoundedRefresh,
+                            title: context.l10n.resetToDefault2,
+                            showChevron: false,
+                            onTap: _restoreVisualEffectsDefaults,
                           ),
                         ],
                       ),

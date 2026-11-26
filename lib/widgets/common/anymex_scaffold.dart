@@ -449,11 +449,14 @@ class AnymeXScaffold extends StatelessWidget {
     Color? color,
   }) {
     final isFile = imagePath.startsWith('file://');
+    final filterQuality = imagePath == 'assets/images/bg_glass_legacy.webp'
+        ? FilterQuality.high
+        : FilterQuality.low;
     return isFile
         ? Image.file(
             File(imagePath.replaceFirst('file://', '')),
             fit: BoxFit.cover,
-            filterQuality: FilterQuality.low,
+            filterQuality: filterQuality,
             color: color,
             colorBlendMode: color != null ? BlendMode.color : null,
             gaplessPlayback: true,
@@ -461,7 +464,7 @@ class AnymeXScaffold extends StatelessWidget {
         : Image.asset(
             imagePath,
             fit: BoxFit.cover,
-            filterQuality: FilterQuality.low,
+            filterQuality: filterQuality,
             color: color,
             colorBlendMode: color != null ? BlendMode.color : null,
             gaplessPlayback: true,
