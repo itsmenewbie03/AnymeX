@@ -475,7 +475,7 @@ class DiscordMarkdown extends StatelessWidget {
 
     double? width;
     final widthMatch = RegExp(
-      r'width=["'']{1,2}([^"''s>]+)["'']{1,2}',
+      r'width=["'']{1,2}([^"''\s>]+)["'']{1,2}',
       caseSensitive: false,
     ).firstMatch(tagAttributes);
     if (widthMatch != null) {
@@ -487,7 +487,7 @@ class DiscordMarkdown extends StatelessWidget {
 
     double? height;
     final heightMatch = RegExp(
-      r'height=["'']{1,2}([^"''s>]+)["'']{1,2}',
+      r'height=["'']{1,2}([^"''\s>]+)["'']{1,2}',
       caseSensitive: false,
     ).firstMatch(tagAttributes);
     if (heightMatch != null) {
@@ -628,7 +628,9 @@ class _ImageThumbnail extends StatelessWidget {
   const _ImageThumbnail({
     required this.image,
     required this.colorScheme,
-  }) : defaultMaxHeight = 180.0 : defaultMaxWidth = 260.0;
+    this.defaultMaxHeight = 180.0,
+    this.defaultMaxWidth = 260.0,
+  });
 
   final CommentMediaImage image;
   final ColorScheme colorScheme;
