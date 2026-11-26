@@ -560,6 +560,13 @@ abstract final class SettingsRegistry {
           searchTags: ['box color', 'shading'],
         ),
         SettingItem(
+          title: 'Subtitle Background Transparency',
+          category: 'Video Player',
+          section: 'Subtitles',
+          icon: Icons.opacity,
+          searchTags: ['background opacity', 'box alpha', 'shading'],
+        ),
+        SettingItem(
           title: 'Subtitle Outline Color',
           category: 'Video Player',
           section: 'Subtitles',
@@ -1258,6 +1265,24 @@ abstract final class SettingsRegistry {
             'japanese',
             'idioma',
             'sprache',
+          ],
+        ),
+        SettingItem(
+          title: 'Episode Metadata',
+          category: 'Content & Preferences',
+          section: 'Library & Content Safety',
+          icon: Icons.subtitles_outlined,
+          searchTags: [
+            'metadata',
+            'episodes',
+            'anizip',
+            'kitsu',
+            'simkl',
+            'anilist',
+            'tenrai',
+            'anify',
+            'titles',
+            'thumbnails',
           ],
         ),
         SettingItem(

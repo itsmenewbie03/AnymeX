@@ -119,11 +119,11 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     final c = ReaderController(shouldTrack: false, isPreview: true);
     c.media = Media(
       id: '0',
-      title: 'Attack on Titan',
+      title: Get.context!.l10n.attackOnTitan,
       poster: '',
       serviceType: ServicesType.anilist,
     );
-    c.chapterList = [Chapter(number: 138), Chapter(number: 139, title: 'Freedom', totalPages: 24)];
+    c.chapterList = [Chapter(number: 138), Chapter(number: 139, title: Get.context!.l10n.freedom, totalPages: 24)];
     c.currentChapter.value = c.chapterList.last;
     c.pageList.value = List.generate(24, (_) => PageUrl(''));
     c.currentPageIndex.value = 6;
@@ -193,6 +193,8 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
   final RxBool colorFilterEnabled = false.obs;
   final RxInt colorFilterValue = 0x00000000.obs;
   final RxInt colorFilterMode = 0.obs;
+  final RxBool enhanceColorsEnabled = false.obs;
+  final RxString enhanceColorsProfile = 'manhwa'.obs;
   final RxBool grayscaleEnabled = false.obs;
   final RxBool invertColorsEnabled = false.obs;
   final RxInt readerTheme = 1.obs;
@@ -466,22 +468,21 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     _performSave(reason: 'Page opened');
     _startStatsTimer();
 
-    _rpcWorker = ever(currentChapter, (_) {
-      final totalPages = pageList.isNotEmpty
-          ? pageList.length
-          : (currentChapter.value?.totalPages ?? 1);
+    _rpcWorker = ever(currentChapter, (chapter) {
+      if (chapter == null || !Get.isRegistered<DiscordRPCController>()) return;
       DiscordRPCController.instance.updateMangaPresence(
           manga: media,
-          chapter: currentChapter.value!,
+          chapter: chapter,
           totalChapters: chapterList.length.toString(),
-          currentPage: currentPageIndex.value + 1,
-          totalPages: totalPages);
+          currentPage: 1,
+          totalPages: chapter.totalPages ?? 1);
     });
 
     _pageRpcWorker = ever(currentPageIndex, (index) {
       _rpcPageDebounceTimer?.cancel();
       _rpcPageDebounceTimer = Timer(const Duration(seconds: 10), () {
         if (isClosed || currentChapter.value == null) return;
+        if (!Get.isRegistered<DiscordRPCController>()) return;
         final totalPages = pageList.isNotEmpty
             ? pageList.length
             : (currentChapter.value!.totalPages ?? 1);
@@ -633,9 +634,11 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
 
     _performFinalSave();
 
-    DiscordRPCController.instance.updateMediaPresence(
-      media: media,
-    );
+    if (Get.isRegistered<DiscordRPCController>()) {
+      DiscordRPCController.instance.updateMediaPresence(
+        media: media,
+      );
+    }
 
     _rpcPageDebounceTimer?.cancel();
     _pageRpcWorker.dispose();
@@ -1037,6 +1040,10 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     colorFilterEnabled.value = ReaderKeys.colorFilterEnabled.get<bool>(false);
     colorFilterValue.value = ReaderKeys.colorFilterValue.get<int>(0);
     colorFilterMode.value = ReaderKeys.colorFilterMode.get<int>(0);
+    enhanceColorsEnabled.value =
+        ReaderKeys.enhanceColorsEnabled.get<bool>(false);
+    enhanceColorsProfile.value =
+        ReaderKeys.enhanceColorsProfile.get<String>('manhwa');
     grayscaleEnabled.value = ReaderKeys.grayscaleEnabled.get<bool>(false);
     invertColorsEnabled.value = ReaderKeys.invertColorsEnabled.get<bool>(false);
     readerTheme.value = ReaderKeys.readerTheme.get<int>(1);
@@ -1104,6 +1111,8 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     ReaderKeys.colorFilterEnabled.set(colorFilterEnabled.value);
     ReaderKeys.colorFilterValue.set(colorFilterValue.value);
     ReaderKeys.colorFilterMode.set(colorFilterMode.value);
+    ReaderKeys.enhanceColorsEnabled.set(enhanceColorsEnabled.value);
+    ReaderKeys.enhanceColorsProfile.set(enhanceColorsProfile.value);
     ReaderKeys.grayscaleEnabled.set(grayscaleEnabled.value);
     ReaderKeys.invertColorsEnabled.set(invertColorsEnabled.value);
     ReaderKeys.readerTheme.set(readerTheme.value);
@@ -1472,12 +1481,14 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
       final totalPages = pageList.isNotEmpty
           ? pageList.length
           : (activeChapter.totalPages ?? 1);
-      DiscordRPCController.instance.updateMangaPresence(
-          manga: media,
-          chapter: activeChapter,
-          totalChapters: chapterList.length.toString(),
-          currentPage: currentPageIndex.value + 1,
-          totalPages: totalPages);
+      if (Get.isRegistered<DiscordRPCController>()) {
+        DiscordRPCController.instance.updateMangaPresence(
+            manga: media,
+            chapter: activeChapter,
+            totalChapters: chapterList.length.toString(),
+            currentPage: currentPageIndex.value + 1,
+            totalPages: totalPages);
+      }
     }
 
     if (activePages.isNotEmpty &&
@@ -1564,12 +1575,14 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     final totalPages = pageList.isNotEmpty
         ? pageList.length
         : (currentChapter.value?.totalPages ?? 1);
-    DiscordRPCController.instance.updateMangaPresence(
-        manga: media,
-        chapter: currentChapter.value!,
-        totalChapters: chapterList.length.toString(),
-        currentPage: currentPageIndex.value + 1,
-        totalPages: totalPages);
+    if (Get.isRegistered<DiscordRPCController>()) {
+      DiscordRPCController.instance.updateMangaPresence(
+          manga: media,
+          chapter: currentChapter.value!,
+          totalChapters: chapterList.length.toString(),
+          currentPage: currentPageIndex.value + 1,
+          totalPages: totalPages);
+    }
 
     final hasLocal = curCh.localPath != null &&
         Directory(curCh.localPath!).existsSync();
@@ -1731,6 +1744,16 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
     savePreferences();
   }
 
+  void toggleEnhanceColors() {
+    enhanceColorsEnabled.value = !enhanceColorsEnabled.value;
+    savePreferences();
+  }
+
+  void setEnhanceColorsProfile(String profile) {
+    enhanceColorsProfile.value = profile;
+    savePreferences();
+  }
+
   void setColorFilterChannel(String channel, int value) {
     final cur = colorFilterValue.value;
     colorFilterValue.value = switch (channel) {
@@ -1831,10 +1854,10 @@ class ReaderController extends GetxController with WidgetsBindingObserver {
         }
         selectedUpscalerShader.value = fileName;
         savePreferences();
-        AnymeXToast.show(message: 'Shader added: $fileName');
+        AnymeXToast.show(message: Get.context!.l10n.shaderAdded(fileName.toString()));
       }
     } catch (e) {
-      AnymeXToast.show(message: 'Error importing shader: $e');
+      AnymeXToast.show(message: Get.context!.l10n.errorImportingShader(e.toString()));
     }
   }
 

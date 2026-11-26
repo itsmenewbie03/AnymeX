@@ -8,10 +8,11 @@ import 'package:anymex/screens/manga/widgets/reader/themes/setup/reader_control_
 import 'package:anymex/screens/settings/sub_settings/settings_tap_zones.dart';
 import 'package:anymex/utils/function.dart';
 import 'package:anymex/utils/theme_extensions.dart';
+import 'package:anymex/widgets/anymex_widgets/anymex_badge.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_section_builder.dart';
+import 'package:anymex/widgets/anymex_widgets/anymex_segmented_button.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_tile.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_bottomsheet.dart';
-import 'package:anymex/widgets/anymex_widgets/anymex_tabbar.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -106,24 +107,31 @@ class _TabbedSettingsSheetState extends State<_TabbedSettingsSheet>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AnymeXText('Reader Settings',
+          AnymeXText(
+            context.l10n.readerSettings,
             size: 18,
             variant: TextVariant.bold,
           ),
           const SizedBox(height: 10),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-            child: AnymeXTabBar(
-              minTabWidth: 105,
-              selectTabs: [
-                context.l10n.readingMode,
-                context.l10n.general,
-                context.l10n.colorFilter,
-                'Upscale'
+            padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 8.0),
+            child: AnymeXSegmentedButtonGroup<int>(
+              selected: _selectedIndex,
+              height: 44,
+              scrollable: true,
+              items: [
+                (value: 0, title: context.l10n.readingMode, icon: null),
+                (value: 1, title: context.l10n.general, icon: null),
+                (value: 2, title: context.l10n.colorFilter, icon: null),
+                (value: 3, title: context.l10n.upscale, icon: null),
               ],
-              selectedIndex: _selectedIndex,
-              onTabSelected: (index) {
+              badgeBuilder: (context, index, isSelected) {
+                if (index == 2 || index == 3) {
+                  return AnymeXBadge.newBadge(context, inverted: isSelected);
+                }
+                return null;
+              },
+              onSelected: (index) {
                 setState(() {
                   _selectedIndex = index;
                   _tabController.animateTo(index);
@@ -138,8 +146,7 @@ class _TabbedSettingsSheetState extends State<_TabbedSettingsSheet>
               alignment: Alignment.topCenter,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                transitionBuilder:
-                    (Widget child, Animation<double> animation) {
+                transitionBuilder: (Widget child, Animation<double> animation) {
                   return FadeTransition(
                     opacity: animation,
                     child: child,
@@ -152,10 +159,8 @@ class _TabbedSettingsSheetState extends State<_TabbedSettingsSheet>
                     1 => _GeneralPage(
                         controller: widget.controller,
                         settings: widget.settings),
-                    2 =>
-                      ColorFilterSettingsPage(controller: widget.controller),
-                    _ =>
-                      UpscaleSettingsPage(controller: widget.controller),
+                    2 => ColorFilterSettingsPage(controller: widget.controller),
+                    _ => UpscaleSettingsPage(controller: widget.controller),
                   },
                 ),
               ),
@@ -179,7 +184,7 @@ class _ReadingModePage extends StatelessWidget {
       final currentDual = controller.dualPageMode.value;
 
       return SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Column(
           children: [
             AnymeXSectionBuilder(
@@ -236,7 +241,7 @@ class _ReadingModePage extends StatelessWidget {
                   ),
                 ),
                 AnymeXTile(
-                  title: 'Direction',
+                  title: context.l10n.direction,
                   subtitle: switch (currentDirection) {
                     MangaPageViewDirection.down => 'Top-Down',
                     MangaPageViewDirection.right => 'LTR',
@@ -272,11 +277,13 @@ class _ReadingModePage extends StatelessWidget {
                             ),
                             child: Icon(
                               switch (dir) {
-                                MangaPageViewDirection.down => Iconsax.arrow_down,
+                                MangaPageViewDirection.down =>
+                                  Iconsax.arrow_down,
                                 MangaPageViewDirection.right =>
                                   Iconsax.arrow_right_1,
                                 MangaPageViewDirection.up => Iconsax.arrow_up_3,
-                                MangaPageViewDirection.left => Iconsax.arrow_left,
+                                MangaPageViewDirection.left =>
+                                  Iconsax.arrow_left,
                               },
                               size: 18,
                               color: isSelected
@@ -290,7 +297,7 @@ class _ReadingModePage extends StatelessWidget {
                   ),
                 ),
                 AnymeXTile(
-                  title: 'Dual Page Mode',
+                  title: context.l10n.dualPageMode,
                   subtitle: switch (currentDual) {
                     DualPageMode.off => 'Standard (Single)',
                     DualPageMode.auto => 'Auto (Landscape)',
@@ -342,8 +349,8 @@ class _ReadingModePage extends StatelessWidget {
                 ),
                 if (Platform.isAndroid || Platform.isIOS)
                   AnymeXTile(
-                    title: 'Tap Zones',
-                    subtitle: 'Customize gestures',
+                    title: context.l10n.tapZones,
+                    subtitle: context.l10n.customizeGestures,
                     icon: Icons.touch_app_rounded,
                     onTap: () {
                       Navigator.pop(context);
@@ -357,37 +364,37 @@ class _ReadingModePage extends StatelessWidget {
               children: [
                 AnymeXTile.toggle(
                   icon: Iconsax.pharagraphspacing,
-                  title: 'Spaced Pages',
-                  subtitle: 'Continuous Mode only',
+                  title: context.l10n.spacedPages,
+                  subtitle: context.l10n.continuousModeOnly2,
                   value: controller.spacedPages.value,
                   onChanged: (_) => controller.toggleSpacedPages(),
                 ),
                 AnymeXTile.toggle(
                   icon: Iconsax.arrow,
-                  title: 'Overscroll',
-                  subtitle: 'To Prev/Next Chapter',
+                  title: context.l10n.overscroll,
+                  subtitle: context.l10n.toPrevNextChapter,
                   value: controller.overscrollToChapter.value,
                   onChanged: (_) => controller.toggleOverscrollToChapter(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.smartphone_rounded,
-                  title: 'Auto Webtoon Mode',
+                  title: context.l10n.autoWebtoonMode,
                   subtitle:
-                      'Automatically switch to continuous mode for long-strip manga',
+                      context.l10n.automaticallySwitchToContinuousModeFor,
                   value: controller.autoWebtoonMode.value,
                   onChanged: (_) => controller.toggleAutoWebtoonMode(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.onetwothree_rounded,
-                  title: 'Navigate by Number',
-                  subtitle: 'Always checks current chapter number and compares it with next/prev chapter, navigating only when the number is different. Navigate by Chapter will just move to the next item in the list even if there are duplicates.',
+                  title: context.l10n.navigateByNumber,
+                  subtitle: context.l10n.alwaysChecksCurrentChapterNumberAnd,
                   value: controller.navigateByNumber.value,
                   onChanged: (_) => controller.toggleNavigateByNumber(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.fullscreen_rounded,
-                  title: 'Fit to Screen Width',
-                  subtitle: 'Stretch images to fit screen width',
+                  title: context.l10n.fitToScreenWidth,
+                  subtitle: context.l10n.stretchImagesToFitScreenWidth,
                   value: controller.fitToScreen.value,
                   onChanged: (_) => controller.toggleFitToScreen(),
                 ),
@@ -409,7 +416,7 @@ class _GeneralPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       return SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Column(
           children: [
             AnymeXSectionBuilder(
@@ -435,7 +442,7 @@ class _GeneralPage extends StatelessWidget {
                   onTap: () => _showThemePicker(context),
                 ),
                 AnymeXTile(
-                  title: 'Image Filter Quality',
+                  title: context.l10n.imageFilterQuality,
                   subtitle: switch (controller.imageFilterQuality.value) {
                     0 => 'None (Nearest)',
                     1 => 'Low (Bilinear)',
@@ -453,37 +460,38 @@ class _GeneralPage extends StatelessWidget {
               children: [
                 AnymeXTile.toggle(
                   icon: Iconsax.eye,
-                  title: 'Persistent Page Indicator',
-                  subtitle: 'Always show page indicator',
+                  title: context.l10n.persistentPageIndicator,
+                  subtitle: context.l10n.alwaysShowPageIndicator,
                   value: controller.showPageIndicator.value,
                   onChanged: (_) => controller.togglePageIndicator(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.crop_rounded,
-                  title: 'Crop Borders',
-                  subtitle: 'Remove white/black borders',
+                  title: context.l10n.cropBorders,
+                  subtitle: context.l10n.removeWhiteBlackBorders,
                   value: controller.cropImages.value,
                   onChanged: (_) => controller.toggleCropImages(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.screen_lock_rotation_rounded,
-                  title: 'Keep Screen On',
-                  subtitle: 'Prevent screen from sleeping while reading',
+                  title: context.l10n.keepScreenOn,
+                  subtitle: context.l10n.preventScreenFromSleepingWhileReading,
                   value: controller.keepScreenOn.value,
                   onChanged: (_) => controller.toggleKeepScreenOn(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.compare_arrows_rounded,
-                  title: 'Always Show Chapter Transition',
+                  title: context.l10n.alwaysShowChapterTransition,
                   subtitle:
-                      'Show transition page even when chapters are adjacent',
+                      context.l10n.showTransitionPageEvenWhenChapters,
                   value: controller.alwaysShowChapterTransition.value,
-                  onChanged: (_) => controller.toggleAlwaysShowChapterTransition(),
+                  onChanged: (_) =>
+                      controller.toggleAlwaysShowChapterTransition(),
                 ),
                 AnymeXTile.toggle(
                   icon: Icons.touch_app_rounded,
-                  title: 'Long Press for Page Actions',
-                  subtitle: 'Long-press a page to save, share, or copy it',
+                  title: context.l10n.longPressForPageActions,
+                  subtitle: context.l10n.longPressAPageToSave,
                   value: controller.longPressPageActionsEnabled.value,
                   onChanged: (_) => controller.toggleLongPressPageActions(),
                 ),
@@ -494,18 +502,17 @@ class _GeneralPage extends StatelessWidget {
               children: [
                 AnymeXTile.toggle(
                   icon: Icons.monitor_rounded,
-                  title: 'E-ink Display Refresh',
-                  subtitle: 'Flash screen on page turn to clear ghosting',
+                  title: context.l10n.eInkDisplayRefresh,
+                  subtitle: context.l10n.flashScreenOnPageTurnTo,
                   value: controller.displayRefreshEnabled.value,
                   onChanged: (_) => controller.toggleDisplayRefresh(),
                 ),
                 if (controller.displayRefreshEnabled.value) ...[
                   AnymeXTile.slider(
-                    title: 'Flash Duration',
+                    title: context.l10n.flashDuration,
                     icon: Icons.timer_rounded,
-                    subtitle: 'Milliseconds',
-                    value:
-                        controller.displayRefreshDurationMs.value.toDouble(),
+                    subtitle: context.l10n.milliseconds,
+                    value: controller.displayRefreshDurationMs.value.toDouble(),
                     min: 50,
                     max: 500,
                     divisions: 18,
@@ -513,11 +520,10 @@ class _GeneralPage extends StatelessWidget {
                         controller.displayRefreshDurationMs.value = v.toInt(),
                   ),
                   AnymeXTile.slider(
-                    title: 'Flash Every N Pages',
+                    title: context.l10n.flashEveryNPages,
                     icon: Icons.refresh_rounded,
-                    subtitle: 'Flash frequency',
-                    value:
-                        controller.displayRefreshInterval.value.toDouble(),
+                    subtitle: context.l10n.flashFrequency,
+                    value: controller.displayRefreshInterval.value.toDouble(),
                     min: 1,
                     max: 10,
                     divisions: 9,
@@ -526,16 +532,17 @@ class _GeneralPage extends StatelessWidget {
                   ),
                   Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
                     child: Row(
                       children: [
                         const Icon(Icons.palette_rounded, size: 20),
                         const SizedBox(width: 10),
-                        const AnymeXText('Flash Color'),
+                        AnymeXText(context.l10n.flashColor),
                         const Spacer(),
                         ChoiceChip(
-                          label: const AnymeXText('Black'),
-                          selected: controller.displayRefreshColor.value == 'black',
+                          label: AnymeXText(context.l10n.black),
+                          selected:
+                              controller.displayRefreshColor.value == 'black',
                           onSelected: (_) {
                             controller.displayRefreshColor.value = 'black';
                             controller.savePreferences();
@@ -543,8 +550,9 @@ class _GeneralPage extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         ChoiceChip(
-                          label: const AnymeXText('White'),
-                          selected: controller.displayRefreshColor.value == 'white',
+                          label: AnymeXText(context.l10n.white),
+                          selected:
+                              controller.displayRefreshColor.value == 'white',
                           onSelected: (_) {
                             controller.displayRefreshColor.value = 'white';
                             controller.savePreferences();
@@ -557,15 +565,15 @@ class _GeneralPage extends StatelessWidget {
                 if (Platform.isAndroid) ...[
                   AnymeXTile.toggle(
                     icon: Iconsax.volume_high,
-                    title: 'Volume Keys Navigation',
-                    subtitle: 'Use volume keys to change pages',
+                    title: context.l10n.volumeKeysNavigation,
+                    subtitle: context.l10n.useVolumeKeysToChangePages,
                     value: controller.volumeKeysEnabled.value,
                     onChanged: (_) => controller.toggleVolumeKeys(),
                   ),
                   AnymeXTile.toggle(
                     icon: Iconsax.arrow_swap_horizontal,
-                    title: 'Invert Volume Keys',
-                    subtitle: 'Swap Up/Down actions',
+                    title: context.l10n.invertVolumeKeys,
+                    subtitle: context.l10n.swapUpDownActions2,
                     value: controller.invertVolumeKeys.value,
                     onChanged: (val) {
                       controller.invertVolumeKeys.value = val;
@@ -573,19 +581,20 @@ class _GeneralPage extends StatelessWidget {
                     },
                   ),
                 ],
-                if (controller.readingLayout.value == MangaPageViewMode.continuous) ...[
+                if (controller.readingLayout.value ==
+                    MangaPageViewMode.continuous) ...[
                   AnymeXTile.toggle(
                     icon: Icons.play_arrow_rounded,
-                    title: 'Auto Scroll',
-                    subtitle: 'Automatically scroll/advance pages',
+                    title: context.l10n.autoScroll,
+                    subtitle: context.l10n.automaticallyScrollAdvancePages,
                     value: controller.autoScrollEnabled.value,
                     onChanged: (_) => controller.toggleAutoScroll(),
                   ),
                   if (controller.autoScrollEnabled.value)
                     AnymeXTile.slider(
-                      title: 'Auto Scroll Speed',
+                      title: context.l10n.autoScrollSpeed,
                       icon: Icons.speed,
-                      subtitle: 'Seconds per page / screen',
+                      subtitle: context.l10n.secondsPerPageScreen,
                       value: controller.autoScrollSpeed.value,
                       min: 1.0,
                       max: 10.0,
@@ -627,7 +636,8 @@ class _GeneralPage extends StatelessWidget {
                     min: 1.0,
                     max: 5.0,
                     divisions: 9,
-                    onChanged: (v) => controller.scrollSpeedMultiplier.value = v,
+                    onChanged: (v) =>
+                        controller.scrollSpeedMultiplier.value = v,
                   ),
                 ],
               ],
@@ -666,27 +676,27 @@ class _GeneralPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const AnymeXText('Reader Background'),
+        title: AnymeXText(context.l10n.readerBackground),
         content: Obx(() => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<int>(
-                    title: const AnymeXText('White'),
+                    title: AnymeXText(context.l10n.white),
                     value: 0,
                     groupValue: controller.readerTheme.value,
                     onChanged: _setTheme),
                 RadioListTile<int>(
-                    title: const AnymeXText('Black'),
+                    title: AnymeXText(context.l10n.black),
                     value: 1,
                     groupValue: controller.readerTheme.value,
                     onChanged: _setTheme),
                 RadioListTile<int>(
-                    title: const AnymeXText('Gray'),
+                    title: AnymeXText(context.l10n.gray),
                     value: 2,
                     groupValue: controller.readerTheme.value,
                     onChanged: _setTheme),
                 RadioListTile<int>(
-                    title: const AnymeXText('Automatic'),
+                    title: AnymeXText(context.l10n.automatic),
                     value: 3,
                     groupValue: controller.readerTheme.value,
                     onChanged: _setTheme),
@@ -708,33 +718,33 @@ class _GeneralPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const AnymeXText('Image Filter Quality'),
+        title: AnymeXText(context.l10n.imageFilterQuality),
         content: Obx(() => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 RadioListTile<int>(
-                    title: const AnymeXText('None (Nearest-neighbor)'),
+                    title: AnymeXText(context.l10n.noneNearestNeighbor),
                     value: 0,
                     groupValue: controller.imageFilterQuality.value,
                     onChanged: _setFilterQuality),
                 RadioListTile<int>(
-                    title: const AnymeXText('Low (Bilinear)'),
+                    title: AnymeXText(context.l10n.lowBilinear),
                     value: 1,
                     groupValue: controller.imageFilterQuality.value,
                     onChanged: _setFilterQuality),
                 RadioListTile<int>(
-                    title: const AnymeXText('Medium (Default)'),
+                    title: AnymeXText(context.l10n.mediumDefault),
                     value: 2,
                     groupValue: controller.imageFilterQuality.value,
                     onChanged: _setFilterQuality),
                 RadioListTile<int>(
-                    title: const AnymeXText('High (Bicubic)'),
+                    title: AnymeXText(context.l10n.highBicubic),
                     value: 3,
                     groupValue: controller.imageFilterQuality.value,
                     onChanged: _setFilterQuality),
                 RadioListTile<int>(
-                    title:
-                        const AnymeXText('Lanczos Pre-scale (Best quality, slower)'),
+                    title: AnymeXText(
+                        context.l10n.lanczosPreScaleBestQualitySlower),
                     value: 4,
                     groupValue: controller.imageFilterQuality.value,
                     onChanged: _setFilterQuality),

@@ -2,6 +2,7 @@ import 'package:anymex/l10n/l10n_extension.dart';
 import 'dart:io';
 
 import 'package:anymex/screens/extensions/widgets/plugin_manager.dart';
+import 'package:anymex/services/crash_detector.dart';
 import 'package:anymex/utils/function.dart';
 import 'package:anymex/utils/theme_extensions.dart';
 import 'package:anymex/widgets/common/anymex_scaffold.dart';
@@ -179,7 +180,7 @@ class _SettingsExtensionManagerState extends State<SettingsExtensionManager> {
         }
       }
     } catch (error) {
-      if (mounted) errorSnackBar('Re-download failed: $error');
+      if (mounted) errorSnackBar(context.l10n.reDownloadFailed(error.toString()));
     }
   }
 
@@ -325,11 +326,11 @@ class _SettingsExtensionManagerState extends State<SettingsExtensionManager> {
       } else {
         if (mounted) {
           snackBar(
-              'Rollback to ${release.tagName} downloaded. Please restart the app to apply.');
+              context.l10n.rollbackToDownloadedPleaseRestart(release.tagName));
         }
       }
     } catch (error) {
-      if (mounted) errorSnackBar('Rollback failed: $error');
+      if (mounted) errorSnackBar(context.l10n.rollbackFailed(error.toString()));
     }
   }
 
@@ -416,6 +417,16 @@ class _SettingsExtensionManagerState extends State<SettingsExtensionManager> {
                                   )
                                 : null,
                           ),
+                          if (Platform.isAndroid &&
+                              CrashDetector.isBridgeBlocked.value)
+                            AnymeXTile(
+                              icon: Icons.shield_outlined,
+                              title: 'Enable & Retry Runtime Host',
+                              subtitle:
+                                  'Auto-load was stopped after a crash on previous launch',
+                              onTap: () =>
+                                  CrashDetector.restoreAndRetryRuntimeHost(),
+                            ),
                           if (hasInstalled || bridge.error.value.isNotEmpty)
                             AnymeXTile(
                               icon: Icons.refresh_rounded,
@@ -755,7 +766,7 @@ class _SettingsExtensionManagerState extends State<SettingsExtensionManager> {
       if (children.isNotEmpty) {
         settingsList.add(
           AnymeXSectionBuilder(
-            title: '${manager.name} Settings',
+            title: context.l10n.settings2(manager.name.toString()),
             children: children,
           ),
         );
@@ -780,7 +791,7 @@ class _SettingsExtensionManagerState extends State<SettingsExtensionManager> {
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
               labelText: context.l10n.enterValue,
             ),
           ),

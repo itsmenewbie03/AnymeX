@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:anymex/l10n/l10n_extension.dart';
+import 'package:anymex/services/crash_detector.dart';
 import 'package:anymex/controllers/settings/methods.dart';
 import 'package:anymex/controllers/source/source_controller.dart';
 import 'package:anymex/widgets/common/custom_tiles.dart';
@@ -194,6 +197,16 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
     await em.addRepos(urls, type, activeManager.id);
     widget.onSave?.call();
     if (mounted) setState(() {});
+  }
+
+  void _confirmRemoveRepo(Repo repo, ItemType type) {
+    AnymeXDialog(
+      title: 'Remove Repository',
+      message: 'Are you sure you want to remove "${_path(repo.url)}"?',
+      confirmText: context.l10n.remove,
+      cancelText: context.l10n.cancel,
+      onConfirm: () => _removeRepo(repo, type),
+    ).show(context);
   }
 
   Future<void> _removeRepo(Repo repo, ItemType type) async {
@@ -440,14 +453,14 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
             ),
             const SizedBox(height: 16),
             AnymeXText(
-              'No ${tabInfo.label} Managers Available',
+              context.l10n.noManagersAvailable(tabInfo.label),
               variant: TextVariant.bold,
               size: 15,
               color: colors.onSurface,
             ),
             const SizedBox(height: 6),
             AnymeXText(
-              'No extension managers currently support ${tabInfo.label.toLowerCase()} content.',
+              context.l10n.noExtensionManagersCurrentlySupport(tabInfo.label.toLowerCase()),
               variant: TextVariant.regular,
               size: 12.5,
               textAlign: TextAlign.center,
@@ -497,7 +510,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
                             Border.all(color: colors.error.withOpacity(0.25)),
                       ),
                       child: AnymeXText(
-                        'Plugin Required',
+                        context.l10n.pluginRequired,
                         variant: TextVariant.bold,
                         size: 10,
                         color: colors.error,
@@ -600,7 +613,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
                     size: 18, color: colors.error),
                 const SizedBox(width: 8),
                 AnymeXText(
-                  'Runtime Plugin Required',
+                  context.l10n.runtimePluginRequired,
                   variant: TextVariant.bold,
                   size: 13,
                   color: colors.onSurface,
@@ -609,7 +622,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
             ),
             const SizedBox(height: 6),
             AnymeXText(
-              'To use $name repositories and extensions, please download and install the runtime plugin.',
+              context.l10n.toUseRepositoriesAndExtensions(name),
               variant: TextVariant.regular,
               size: 12,
               color: colors.onSurfaceVariant,
@@ -618,8 +631,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
             FilledButton.icon(
               onPressed: () => navigate(() => const SettingsExtensionManager()),
               icon: const Icon(Icons.download_rounded, size: 16),
-              label: const AnymeXText(
-                'Open Plugin Downloader',
+              label: AnymeXText(context.l10n.openPluginDownloader,
                 variant: TextVariant.bold,
                 size: 12,
               ),
@@ -639,6 +651,52 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
     }
 
     return Obx(() {
+      if (Platform.isAndroid && CrashDetector.isBridgeBlocked.value) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.shield_outlined, size: 18, color: colors.error),
+                  const SizedBox(width: 8),
+                  AnymeXText(
+                    'Runtime Host Disabled (Crash Detected)',
+                    variant: TextVariant.bold,
+                    size: 13,
+                    color: colors.onSurface,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              AnymeXText(
+                'The extension runtime host crashed on the previous launch and was stopped to protect the app.',
+                variant: TextVariant.regular,
+                size: 12,
+                color: colors.onSurfaceVariant,
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => CrashDetector.restoreAndRetryRuntimeHost(),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const AnymeXText('Enable & Retry',
+                    variant: TextVariant.bold, size: 12),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.multiplyRoundness()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       if (AnymeXRuntimeBridge.controller.error.value.isNotEmpty) {
         return Padding(
           padding: const EdgeInsets.all(16),
@@ -651,7 +709,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
                       size: 18, color: colors.error),
                   const SizedBox(width: 8),
                   AnymeXText(
-                    'Runtime Error',
+                    context.l10n.runtimeError,
                     variant: TextVariant.bold,
                     size: 13,
                     color: colors.onSurface,
@@ -669,7 +727,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
               FilledButton.icon(
                 onPressed: () => AnymeXRuntimeBridge.checkAndInitialize(),
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const AnymeXText('Retry',
+                label: AnymeXText(context.l10n.actionRetry,
                     variant: TextVariant.bold, size: 12),
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primary,
@@ -699,7 +757,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
             ),
             const SizedBox(width: 10),
             AnymeXText(
-              'Starting extension runtime...',
+              context.l10n.startingExtensionRuntime,
               variant: TextVariant.regular,
               size: 12.5,
               color: colors.onSurfaceVariant,
@@ -728,7 +786,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
                 ),
                 const SizedBox(width: 8),
                 AnymeXText(
-                  'No repositories added yet',
+                  context.l10n.noRepositoriesAddedYet,
                   variant: TextVariant.regular,
                   size: 12.5,
                   color: colors.onSurfaceVariant,
@@ -781,7 +839,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
                   ),
                   const SizedBox(width: 6),
                   AnymeXText(
-                    'Add Repository to ${manager.name}',
+                    context.l10n.addRepositoryTo(manager.name),
                     variant: TextVariant.bold,
                     size: 12.5,
                     color: colors.primary,
@@ -869,7 +927,7 @@ class _SettingsExtensionsState extends State<SettingsExtensions> {
               )
             else
               _iconBtn(Icons.delete_outline_rounded, colors.error, 'Remove',
-                  () => _removeRepo(repo, _tab)),
+                  () => _confirmRemoveRepo(repo, _tab)),
           ],
         ),
       ),
@@ -959,7 +1017,7 @@ class _AddRepoDialogState extends State<_AddRepoDialog> {
           _error = e.toString().replaceFirst('Exception: ', '');
           _loading = false;
         });
-        snackBar('Failed to add repo: $_error');
+        snackBar(context.l10n.failedToAddRepo(_error.toString()));
       }
     } finally {
       if (mounted && _error == null) setState(() => _loading = false);
@@ -1012,7 +1070,7 @@ class _AddRepoDialogState extends State<_AddRepoDialog> {
                     ),
                     const SizedBox(height: 2),
                     AnymeXText(
-                      'Enter one or more repository URLs',
+                      context.l10n.enterOneOrMoreRepository,
                       variant: TextVariant.regular,
                       size: 11,
                       color: c.onSurfaceVariant,

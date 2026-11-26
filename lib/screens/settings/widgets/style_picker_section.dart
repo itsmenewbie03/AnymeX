@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:anymex/utils/theme_extensions.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
 import 'package:flutter/material.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 
 class StylePickerSection extends StatefulWidget {
   const StylePickerSection({
@@ -148,7 +149,7 @@ class _StylePickerSectionState extends State<StylePickerSection> {
                 ),
               ),
               AnymeXText(
-                '${_index + 1} of ${widget.itemCount}',
+                context.l10n.itemOfTotal((_index + 1).toString(), (widget.itemCount).toString()),
                 size: 11.5,
                 color: colors.onSurface.opaque(0.55, iReallyMeanIt: true),
               ),
@@ -161,7 +162,7 @@ class _StylePickerSectionState extends State<StylePickerSection> {
               children: [
                 _ArrowButton(
                   icon: Icons.chevron_left_rounded,
-                  tooltip: 'Previous style',
+                  tooltip: context.l10n.previousStyle,
                   onTap: () => _step(-1),
                 ),
                 const SizedBox(width: 8),
@@ -171,7 +172,7 @@ class _StylePickerSectionState extends State<StylePickerSection> {
                 const SizedBox(width: 8),
                 _ArrowButton(
                   icon: Icons.chevron_right_rounded,
-                  tooltip: 'Next style',
+                  tooltip: context.l10n.nextStyle,
                   onTap: () => _step(1),
                 ),
               ],
@@ -198,7 +199,7 @@ class _StylePickerSectionState extends State<StylePickerSection> {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: AnymeXText(
-                      'Current',
+                      context.l10n.currentLabel,
                       size: 10.5,
                       variant: TextVariant.semiBold,
                       color: colors.primary,
@@ -222,32 +223,36 @@ class _StylePickerSectionState extends State<StylePickerSection> {
           ),
           const SizedBox(height: 12),
           Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (int i = 0; i < widget.itemCount; i++)
-                  GestureDetector(
-                    onTap: () => _go(i),
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 3, vertical: 6),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
-                        width: i == _index ? 18 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: i == _index
-                              ? colors.primary
-                              : colors.onSurface
-                                  .opaque(0.25, iReallyMeanIt: true),
-                          borderRadius: BorderRadius.circular(3),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (int i = 0; i < widget.itemCount; i++)
+                    GestureDetector(
+                      onTap: () => _go(i),
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 3, vertical: 6),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          width: i == _index ? 18 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: i == _index
+                                ? colors.primary
+                                : colors.onSurface
+                                    .opaque(0.25, iReallyMeanIt: true),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -260,11 +265,11 @@ class _StylePickerSectionState extends State<StylePickerSection> {
                     ? FilledButton.tonalIcon(
                         onPressed: () {},
                         icon: const Icon(Icons.check_rounded, size: 18),
-                        label: const Text('Current style'),
+                        label: Text(context.l10n.currentStyle),
                       )
                     : FilledButton(
                         onPressed: () => widget.onApply(_index),
-                        child: const Text('Use this style'),
+                        child: Text(context.l10n.useThisStyle),
                       ),
               ),
             ),

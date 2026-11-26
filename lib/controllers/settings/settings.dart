@@ -34,6 +34,8 @@ class Settings extends GetxController {
 
   final canShowUpdate = true.obs;
   final playerControlThemeRx = 'default'.obs;
+  final progressSliderStyleRx = 'defaultm3'.obs;
+  final overrideSliderThemeRx = false.obs;
   final mediaIndicatorThemeRx = 'default'.obs;
   final readerControlThemeRx = 'default'.obs;
   final chapterStyleRx = 'compact'.obs;
@@ -58,7 +60,7 @@ class Settings extends GetxController {
   RxBool useAlternateTitle = false.obs;
   RxBool isIncognito = false.obs;
   RxBool enableBetaUpdates = false.obs;
-  RxBool writeLogToFile = false.obs;
+  RxBool writeLogToFile = true.obs;
   RxBool showHomeContinueWatching = true.obs;
   Rxn<DisplayMode> preferredDisplayMode = Rxn<DisplayMode>();
   Rxn<DisplayMode> activeDisplayMode = Rxn<DisplayMode>();
@@ -72,6 +74,7 @@ class Settings extends GetxController {
   RxBool enableJxlCompression = false.obs;
 
   RxBool isTV = false.obs;
+  RxBool enableSeekPreview = true.obs;
   final _selectedShader = ''.obs;
   final _selectedProfile = 'MID-END'.obs;
   final mpvPath = ''.obs;
@@ -117,6 +120,10 @@ class Settings extends GetxController {
     readerControlThemeRx.value =
         ReaderKeys.readerControlTheme.get<String>('default');
     chapterStyleRx.value = ReaderKeys.chapterStyle.get<String>('compact');
+    progressSliderStyleRx.value =
+        PlayerUiKeys.progressSliderStyle.get<String>('defaultm3');
+    overrideSliderThemeRx.value =
+        PlayerUiKeys.overrideSliderTheme.get<bool>(false);
 
     final savedCardStyleJson =
         UISettingsKeys.customCardStyleJson.get<String>('');
@@ -132,7 +139,7 @@ class Settings extends GetxController {
     useAlternateTitle.value = General.useAlternateTitle.get<bool>(false);
     isIncognito.value = General.incognitoMode.get<bool>(false);
     enableBetaUpdates.value = General.enableBetaUpdates.get<bool>(false);
-    writeLogToFile.value = General.writeLogToFile.get<bool>(false);
+    writeLogToFile.value = General.writeLogToFile.get<bool>(true);
     showHomeContinueWatching.value =
         General.showHomeContinueWatching.get<bool>(true);
     customLogDirectory.value = General.customLogDirectory.get<String>("");
@@ -160,6 +167,25 @@ class Settings extends GetxController {
     if (Platform.isAndroid) {
       _initDisplayModes();
     }
+
+    _initSeekPreviewSetting();
+  }
+
+  void _initSeekPreviewSetting() {
+    final hasDetected = UISettingsKeys.seekPreviewFirstBootDetected.get<bool>(false);
+    if (!hasDetected) {
+      final isCapable = !isTV.value;
+      enableSeekPreview.value = isCapable;
+      UISettingsKeys.enableSeekPreview.set(isCapable);
+      UISettingsKeys.seekPreviewFirstBootDetected.set(true);
+    } else {
+      enableSeekPreview.value = UISettingsKeys.enableSeekPreview.get<bool>(true);
+    }
+  }
+
+  void setSeekPreviewEnabled(bool enabled) {
+    enableSeekPreview.value = enabled;
+    UISettingsKeys.enableSeekPreview.set(enabled);
   }
 
   void toggleIncognito([bool? value]) {
@@ -432,6 +458,12 @@ class Settings extends GetxController {
   set tileStyle(int value) {
     uiSettings.update((s) => s?.tileStyle = value);
     UISettingsKeys.tileStyle.set(value);
+  }
+
+  int get tileIconShape => _getUISetting((s) => s.tileIconShape);
+  set tileIconShape(int value) {
+    uiSettings.update((s) => s?.tileIconShape = value);
+    UISettingsKeys.tileIconShape.set(value);
   }
 
   String get appFontFamily => _getUISetting((s) => s.appFontFamily);
@@ -812,6 +844,18 @@ class Settings extends GetxController {
     PlayerUiKeys.playerControlTheme.set(value);
   }
 
+  String get progressSliderStyle => progressSliderStyleRx.value;
+  set progressSliderStyle(String value) {
+    progressSliderStyleRx.value = value;
+    PlayerUiKeys.progressSliderStyle.set(value);
+  }
+
+  bool get overrideSliderTheme => overrideSliderThemeRx.value;
+  set overrideSliderTheme(bool value) {
+    overrideSliderThemeRx.value = value;
+    PlayerUiKeys.overrideSliderTheme.set(value);
+  }
+
   String get mediaIndicatorTheme => mediaIndicatorThemeRx.value;
   set mediaIndicatorTheme(String value) {
     mediaIndicatorThemeRx.value = value;
@@ -867,6 +911,12 @@ class Settings extends GetxController {
     PlayerSettingsKeys.autoSkipFiller.set(value);
   }
 
+  bool get enableAniSkip => _getPlayerSetting((s) => s.enableAniSkip);
+  set enableAniSkip(bool value) {
+    playerSettings.update((s) => s?.enableAniSkip = value);
+    PlayerSettingsKeys.enableAniSkip.set(value);
+  }
+
   bool get enableScreenshot => _getPlayerSetting((s) => s.enableScreenshot);
   set enableScreenshot(bool value) {
     playerSettings.update((s) => s?.enableScreenshot = value);
@@ -877,6 +927,13 @@ class Settings extends GetxController {
   set enableHoldToSeek(bool value) {
     playerSettings.update((s) => s?.enableHoldToSeek = value);
     PlayerSettingsKeys.enableHoldToSeek.set(value);
+  }
+
+  bool get relativeHoldSpeed =>
+      _getPlayerSetting((s) => s.relativeHoldSpeed);
+  set relativeHoldSpeed(bool value) {
+    playerSettings.update((s) => s?.relativeHoldSpeed = value);
+    PlayerSettingsKeys.relativeHoldSpeed.set(value);
   }
 
   bool get enableSlideToSeek => _getPlayerSetting((s) => s.enableSlideToSeek);

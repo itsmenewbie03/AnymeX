@@ -748,7 +748,7 @@ class _LoaderContentState extends State<_LoaderContent> {
           ? Column(
               children: [
                 AnymeXText(
-                  'Taking longer than expected...',
+                  context.l10n.takingLongerThanExpected,
                   style: Get.theme.textTheme.bodyMedium?.copyWith(
                     color: Get.theme.colorScheme.onSurfaceVariant,
                   ),
@@ -757,7 +757,7 @@ class _LoaderContentState extends State<_LoaderContent> {
                 TextButton.icon(
                   onPressed: () => Get.back(),
                   icon: const Icon(Icons.arrow_back_rounded),
-                  label: const AnymeXText('Go Back'),
+                  label: AnymeXText(context.l10n.goBack),
                 ),
               ],
             )

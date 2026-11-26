@@ -7,6 +7,7 @@ import 'package:anymex/controllers/settings/settings.dart';
 import 'package:anymex/database/isar_models/chapter.dart';
 import 'package:anymex/database/isar_models/episode.dart';
 import 'package:anymex/database/data_keys/keys.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'package:anymex/models/Media/media.dart';
 import 'package:anymex/utils/extension_utils.dart';
 import 'package:anymex/widgets/non_widgets/snackbar.dart';
@@ -48,7 +49,7 @@ class DiscordProfile {
       return 'https://cdn.discordapp.com/avatars/$id/$avatar.png?size=256';
     }
     final defaultAvatarNum = discriminator == '0'
-        ? (int.parse(id) >> 22) % 6
+        ? (BigInt.parse(id) >> 22).toInt() % 6
         : int.parse(discriminator) % 5;
     return 'https://cdn.discordapp.com/embed/avatars/$defaultAvatarNum.png';
   }
@@ -244,7 +245,9 @@ class DiscordRPCController extends GetxController with WidgetsBindingObserver {
       } else if (response.statusCode == 401) {
         print('Invalid token, logging out');
         await logout();
-        snackBar('Session expired. Please login again.');
+        if (Get.context != null) {
+          snackBar(Get.context!.l10n.sessionExpiredPleaseLoginAgain);
+        }
       } else {
         print('Failed to fetch profile: ${response.statusCode}');
       }
@@ -259,8 +262,10 @@ class DiscordRPCController extends GetxController with WidgetsBindingObserver {
     await _saveToken(token);
     await fetchUserProfile();
     await connect();
-    snackBar(
-        'Successfully logged in as ${profile.value?.displayName ?? "User"}');
+    if (Get.context != null) {
+      snackBar(Get.context!.l10n
+          .successfullyLoggedInAs(profile.value?.displayName ?? "User"));
+    }
   }
 
   Future<void> connect() async {
@@ -331,7 +336,11 @@ class DiscordRPCController extends GetxController with WidgetsBindingObserver {
 
   bool _canUseDesktopRpc(String action) {
     if (isMobile) {
-      return true;
+      final socketReady = _gatewaySocket != null && _isConnected.value;
+      if (!socketReady) {
+        print('Skipping $action: Discord gateway not connected (Mobile)');
+      }
+      return socketReady;
     }
     final connected = _discordRPC != null && _isConnected.value;
     if (!connected) {
@@ -1217,7 +1226,9 @@ class DiscordRPCController extends GetxController with WidgetsBindingObserver {
     _token.value = '';
     profile.value = null;
 
-    snackBar('Logged out from Discord');
+    if (Get.context != null) {
+      snackBar(Get.context!.l10n.loggedOutFromDiscord);
+    }
   }
 
   @override

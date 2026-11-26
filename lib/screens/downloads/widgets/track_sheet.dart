@@ -103,7 +103,7 @@ class _TrackSheetState extends State<_TrackSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: AnymeXText('Search failed: $e')),
+          SnackBar(content: AnymeXText(context.l10n.searchFailed2(e.toString()))),
         );
       }
     } finally {
@@ -597,7 +597,7 @@ class _TrackSheetState extends State<_TrackSheet> {
               textInputAction: TextInputAction.search,
               onSubmitted: (q) => _runSearch(tracker, q),
               decoration: InputDecoration(
-                hintText: 'Search ${tracker.label} for "${widget.title}"…',
+                hintText: context.l10n.searchFor(tracker.label.toString(), widget.title.toString()),
                 hintStyle: TextStyle(
                     color: theme.onSurface.withOpacity(0.4), fontSize: 13),
                 prefixIcon: Icon(Icons.search_rounded,
@@ -796,7 +796,7 @@ class _TrackSheetState extends State<_TrackSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             minimumSize: const Size(0, 34),
           ),
-          child: AnymeXText(context.l10n.track, style: TextStyle(fontSize: 12)),
+          child: AnymeXText(context.l10n.track, style: const TextStyle(fontSize: 12)),
         ),
       ),
     );

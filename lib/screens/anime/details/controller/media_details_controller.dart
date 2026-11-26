@@ -20,6 +20,8 @@ import 'package:anymex/database/isar_models/episode.dart';
 import 'package:anymex/database/isar_models/offline_media.dart';
 import 'package:anymex/models/Anilist/anilist_media_user.dart';
 import 'package:anymex/models/Media/media.dart';
+import 'package:anymex/core/metadata/models/episode_metadata.dart';
+import 'package:anymex/core/metadata/episode_metadata_service.dart';
 import 'package:anymex/models/animethemes/anime_theme.dart';
 import 'package:anymex/screens/anime/widgets/comments/controller/comment_preloader.dart';
 import 'package:anymex/utils/anime_themes_api.dart';
@@ -134,6 +136,7 @@ class MediaDetailsController extends GetxController {
   final RxBool isAnify = true.obs;
   final RxBool showAnify = true.obs;
   final RxBool disableAnifyForCurrentSource = false.obs;
+  final RxBool isRefreshingMetadata = false.obs;
   final RxString selectedEpisodeStyle = 'compact'.obs;
   final RxBool isInCustomList = false.obs;
 
@@ -831,6 +834,9 @@ class MediaDetailsController extends GetxController {
 
   List<Episode> _renewEpisodeData(List<Episode> episodes) {
     for (final episode in episodes) {
+      if (episode.title?.toLowerCase().contains('[filler]') ?? false) {
+        episode.filler = true;
+      }
       final info = parseEpisodeInfo(episode.number, episode.title);
       if (info.number.isNotEmpty && info.number != episode.number) {
         episode.number = info.number;
@@ -863,26 +869,94 @@ class MediaDetailsController extends GetxController {
     }).toList();
   }
 
-  Future<void> _applyAnifyCovers({int? reqId}) async {
+  Future<void> refreshEpisodeMetadata() async {
+    if (!isAnime ||
+        rawEpisodes.isEmpty ||
+        disableAnifyForCurrentSource.value) {
+      return;
+    }
+    if (!isAnify.value) {
+      isAnify.value = true;
+    }
+    if (isRefreshingMetadata.value) return;
+    isRefreshingMetadata.value = true;
+    try {
+      await _applyAnifyCovers(
+        reqId: _sourceRequestVersion,
+        forceRefresh: true,
+      );
+    } finally {
+      isRefreshingMetadata.value = false;
+    }
+  }
+
+  Future<void> _applyAnifyCovers({int? reqId, bool forceRefresh = false}) async {
     if (rawEpisodes.isEmpty ||
         !isAnify.value ||
         disableAnifyForCurrentSource.value) {
       return;
     }
     try {
-      final baseList = rawEpisodes.map((e) => e.clone()).toList();
-      final newEps = await AnilistData.fetchEpisodesFromAnify(
-        media.value.id,
-        baseList,
-      );
-      if (reqId != null && _isStaleSourceRequest(reqId)) return;
-      if (newEps.isNotEmpty) {
-        anifyEpisodes.assignAll(newEps);
+      if (forceRefresh) {
+        anifyEpisodes.clear();
+      }
+      final metaTargets = MetadataTargetIds.fromMedia(media.value);
+      final metaService = EpisodeMetadataService.instance;
+
+      if (!metaTargets.hasAnyId) {
+        final baseList = rawEpisodes.map((e) => e.clone()).toList();
+        final newEps = await AnilistData.fetchEpisodesFromAnify(
+          media.value.id,
+          baseList,
+        );
+        if (reqId != null && _isStaleSourceRequest(reqId)) return;
+        if (newEps.isNotEmpty) {
+          anifyEpisodes.assignAll(newEps);
+          if (isAnify.value) {
+            episodeList.assignAll(_renewEpisodeData(newEps));
+            _fetchFillerInfo();
+          }
+        }
+        return;
+      }
+
+      await for (final metaMap in metaService.streamMetadata(
+        metaTargets,
+        forceRefresh: forceRefresh,
+      )) {
+        if (reqId != null && _isStaleSourceRequest(reqId)) return;
+        if (!isAnify.value) break;
+
+        final updatedList = rawEpisodes.map((e) => e.clone()).toList();
+        for (final ep in updatedList) {
+          final epNum = ep.number.toString();
+          final meta = metaMap[epNum];
+          if (meta != null) {
+            if (meta.title != null && meta.title!.isNotEmpty) {
+              ep.title = meta.title!;
+            }
+            if (meta.thumbnail != null && meta.thumbnail!.isNotEmpty) {
+              ep.thumbnail = meta.thumbnail!;
+            }
+            if (meta.description != null && meta.description!.isNotEmpty) {
+              ep.desc = meta.description!;
+            }
+            if (meta.isFiller != null) {
+              ep.filler = meta.isFiller!;
+            }
+            if (ep.title?.toLowerCase().contains('[filler]') ?? false) {
+              ep.filler = true;
+            }
+          }
+        }
+
+        anifyEpisodes.assignAll(updatedList.map((e) => e.clone()).toList());
         if (isAnify.value) {
-          episodeList.assignAll(_renewEpisodeData(newEps));
-          _fetchFillerInfo();
+          episodeList.assignAll(_renewEpisodeData(updatedList));
         }
       }
+
+      _fetchFillerInfo();
     } catch (_) {}
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'package:anymex/controllers/settings/settings.dart';
 import 'package:anymex/database/data_keys/keys.dart';
 import 'package:anymex/screens/anime/watch/controller/player_controller.dart';
@@ -29,76 +30,6 @@ import 'package:path_provider/path_provider.dart';
 
 class ColorProfileManager {
   static const Map<String, Map<String, int>> profiles = {
-    "cinema": {
-      "brightness": 2,
-      "contrast": 12,
-      "saturation": 8,
-      "gamma": 5,
-      "hue": 0,
-    },
-    "cinema_dark": {
-      "brightness": -12,
-      "contrast": 18,
-      "saturation": 6,
-      "gamma": 12,
-      "hue": -1,
-    },
-    "cinema_hdr": {
-      "brightness": 5,
-      "contrast": 22,
-      "saturation": 12,
-      "gamma": 3,
-      "hue": -1,
-    },
-    "anime": {
-      "brightness": 10,
-      "contrast": 22,
-      "saturation": 30,
-      "gamma": -3,
-      "hue": 3,
-    },
-    "anime_vibrant": {
-      "brightness": 14,
-      "contrast": 25,
-      "saturation": 35,
-      "gamma": -4,
-      "hue": 4,
-    },
-    "anime_soft": {
-      "brightness": 5,
-      "contrast": 10,
-      "saturation": 15,
-      "gamma": 0,
-      "hue": 0,
-    },
-    "anime_4k": {
-      "brightness": 2,
-      "contrast": 8,
-      "saturation": 12,
-      "gamma": 1,
-      "hue": 1,
-    },
-    "vivid": {
-      "brightness": 8,
-      "contrast": 25,
-      "saturation": 30,
-      "gamma": -2,
-      "hue": 0,
-    },
-    "vivid_pop": {
-      "brightness": 10,
-      "contrast": 28,
-      "saturation": 35,
-      "gamma": -3,
-      "hue": 0,
-    },
-    "vivid_warm": {
-      "brightness": 6,
-      "contrast": 22,
-      "saturation": 28,
-      "gamma": -1,
-      "hue": 5,
-    },
     "natural": {
       "brightness": 0,
       "contrast": 0,
@@ -106,33 +37,68 @@ class ColorProfileManager {
       "gamma": 0,
       "hue": 0,
     },
+    "anime": {
+      "brightness": 4,
+      "contrast": 14,
+      "saturation": 18,
+      "gamma": -1,
+      "hue": 0,
+    },
+    "anime_vibrant": {
+      "brightness": 6,
+      "contrast": 18,
+      "saturation": 28,
+      "gamma": -2,
+      "hue": 0,
+    },
+    "cinema": {
+      "brightness": 1,
+      "contrast": 8,
+      "saturation": 6,
+      "gamma": 3,
+      "hue": 0,
+    },
+    "cinema_dark": {
+      "brightness": -6,
+      "contrast": 12,
+      "saturation": 4,
+      "gamma": 8,
+      "hue": 0,
+    },
+    "vivid": {
+      "brightness": 4,
+      "contrast": 16,
+      "saturation": 22,
+      "gamma": -1,
+      "hue": 0,
+    },
+    "vivid_pop": {
+      "brightness": 7,
+      "contrast": 22,
+      "saturation": 32,
+      "gamma": -3,
+      "hue": 0,
+    },
     "grayscale": {
       "brightness": 0,
-      "contrast": 10,
+      "contrast": 8,
       "saturation": -100,
       "gamma": 0,
       "hue": 0,
     },
     "warm": {
-      "brightness": 3,
-      "contrast": 8,
-      "saturation": 15,
-      "gamma": -2,
-      "hue": 10,
+      "brightness": 2,
+      "contrast": 6,
+      "saturation": 10,
+      "gamma": -1,
+      "hue": 4,
     },
     "cool": {
       "brightness": 0,
-      "contrast": 10,
-      "saturation": 10,
-      "gamma": 2,
-      "hue": -10,
-    },
-    "dark": {
-      "brightness": -15,
-      "contrast": 15,
-      "saturation": -5,
-      "gamma": 10,
-      "hue": 0,
+      "contrast": 8,
+      "saturation": 8,
+      "gamma": 1,
+      "hue": -4,
     },
   };
 
@@ -296,19 +262,13 @@ class _ColorProfilerContentState extends State<_ColorProfilerContent> {
     (id: 'C+A', title: 'Mode C+A', sub: 'Clean, then sharpen'),
   ];
 
-  static const List<({String key, String title})> _presetDefs = [
-    (key: 'natural', title: 'Natural'),
-    (key: 'vivid', title: 'Vivid'),
-    (key: 'cinema', title: 'Cinema'),
-    (key: 'anime_soft', title: 'Soft'),
-    (key: 'warm', title: 'Warm'),
-    (key: 'cool', title: 'Cool'),
-    (key: 'anime_4k', title: 'Anime 4K'),
-    (key: 'cinema_hdr', title: 'Cinema HDR'),
-    (key: 'vivid_pop', title: 'Vivid Pop'),
-    (key: 'dark', title: 'Dark'),
-    (key: 'grayscale', title: 'Grayscale'),
-  ];
+  static final List<({String key, String title})> _presetDefs =
+      ColorProfileManager.profiles.entries
+          .map((entry) => (
+                key: entry.key,
+                title: entry.key.capitalize!.replaceAll('_', ' ')
+              ))
+          .toList();
 
   static const List<({String key, String label})> _adjustDefs = [
     (key: 'brightness', label: 'Brightness'),
@@ -2243,8 +2203,8 @@ class _ColorProfilerContentState extends State<_ColorProfilerContent> {
               ),
             ),
             AnymeXTile.toggle(
-              title: 'Sigmoid upscaling',
-              subtitle: 'Reduces color ringing artifacts',
+              title: context.l10n.sigmoidUpscaling,
+              subtitle: context.l10n.reducesColorRingingArtifacts,
               value: sigmoid,
               onChanged: (val) {
                 setState(() => _visualSettings['sigmoidUpscaling'] = val);
@@ -2252,8 +2212,8 @@ class _ColorProfilerContentState extends State<_ColorProfilerContent> {
               },
             ),
             AnymeXTile.toggle(
-              title: 'Correct downscaling',
-              subtitle: 'Downscales in linear light space',
+              title: context.l10n.correctDownscaling,
+              subtitle: context.l10n.downscalesInLinearLightSpace,
               value: downscale,
               onChanged: (val) {
                 setState(() => _visualSettings['correctDownscaling'] = val);
@@ -2264,11 +2224,11 @@ class _ColorProfilerContentState extends State<_ColorProfilerContent> {
         ),
         const SizedBox(height: 16),
         AnymeXSectionBuilder(
-          title: 'Motion & Dithering',
+          title: context.l10n.motionDithering,
           children: [
             AnymeXTile.toggle(
-              title: 'Frame interpolation',
-              subtitle: 'Smooth motion between video frames',
+              title: context.l10n.frameInterpolation,
+              subtitle: context.l10n.smoothMotionBetweenVideoFrames,
               value: interpolation,
               onChanged: (val) {
                 setState(() => _visualSettings['interpolation'] = val);
@@ -2276,8 +2236,8 @@ class _ColorProfilerContentState extends State<_ColorProfilerContent> {
               },
             ),
             AnymeXTile.toggle(
-              title: 'Temporal dither',
-              subtitle: 'Reduces color banding with subtle noise',
+              title: context.l10n.temporalDither,
+              subtitle: context.l10n.reducesColorBandingWithSubtle,
               value: dither,
               onChanged: (val) {
                 setState(() => _visualSettings['temporalDither'] = val);

@@ -392,7 +392,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: AnymeXText(
-                  'Online $onlineCount',
+                  context.l10n.onlineCount(onlineCount),
                   size: 12,
                   variant:
                       !isDownloadedTab ? TextVariant.bold : TextVariant.regular,
@@ -416,7 +416,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                   borderRadius: BorderRadius.circular(11),
                 ),
                 child: AnymeXText(
-                  'Downloaded $downloadedCount',
+                  context.l10n.downloadedCount(downloadedCount),
                   size: 12,
                   variant:
                       isDownloadedTab ? TextVariant.bold : TextVariant.regular,
@@ -473,7 +473,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
       return SliverToBoxAdapter(
         child: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: AnymeXText(context.l10n.noChaptersFound2),
           ),
         ),
@@ -556,7 +556,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                               children: [
                                 if (scanlatorsList.length > 1) ...[
                                   AnymeXPopupMenuButton<int>(
-                                    title: 'Scanlators',
+                                    title: context.l10n.scanlators,
                                     theme: Theme.of(context),
                                     items: List.generate(scanlatorsList.length,
                                         (i) {
@@ -598,7 +598,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                                         : 'Ch ${chunks[safeChunkIndex].first.formattedNumber}–${chunks[safeChunkIndex].last.formattedNumber}';
 
                                     return AnymeXPopupMenuButton<int>(
-                                      title: 'Chapter Range',
+                                      title: context.l10n.chapterRange,
                                       theme: Theme.of(context),
                                       items: List.generate(chunks.length,
                                           (index) {
@@ -636,7 +636,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                         ),
                         const SizedBox(width: 8),
                         AnymeXText(
-                          '${filtered.length} chapters',
+                          context.l10n.chaptersCount(filtered.length),
                           size: 12,
                           variant: TextVariant.regular,
                           color: context.colors.primary
@@ -1262,7 +1262,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
               onTap: () {
                 if (state.errorMessage != null &&
                     state.errorMessage!.isNotEmpty) {
-                  snackBar('Download failed: ${state.errorMessage}');
+                  snackBar(context.l10n.downloadFailed2(state.errorMessage.toString()));
                 }
                 _startMangaDownload(context, [chapter]);
               },
@@ -1299,7 +1299,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
                 onTap: () {
-                  snackBar('Chapter ${chapter.formattedNumber} is downloaded');
+                  snackBar(context.l10n.chapterIsDownloaded(chapter.formattedNumber.toString()));
                 },
                 child: Container(
                   width: 32,
@@ -1323,7 +1323,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
           );
         case DownloadItemStatus.downloading:
           return Tooltip(
-            message: 'Downloading (${(state.progress * 100).toInt()}%)',
+            message: context.l10n.downloading2(((state.progress * 100).toInt()).toString()),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -1415,7 +1415,7 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
                 onTap: () {
                   if (state.errorMessage != null &&
                       state.errorMessage!.isNotEmpty) {
-                    snackBar('Download failed: ${state.errorMessage}');
+                    snackBar(context.l10n.downloadFailed2(state.errorMessage.toString()));
                   }
                   _startMangaDownload(context, [chapter]);
                 },
@@ -1595,21 +1595,21 @@ class _ChapterListBuilderState extends State<ChapterListBuilder>
     final options = <_BatchOption>[
       (
         title: context.l10n.downloadUnreadChapters,
-        subtitle: '${unread.length} chapters',
+        subtitle: context.l10n.chapters2(unread.length.toString()),
         icon: Icons.playlist_play_rounded,
         enabled: unread.isNotEmpty,
         onTap: () => _startMangaDownload(context, unread),
       ),
       (
         title: context.l10n.downloadCurrentSection,
-        subtitle: '${chunkNotDownloaded.length} chapters',
+        subtitle: context.l10n.chapters2(chunkNotDownloaded.length.toString()),
         icon: Icons.view_carousel_outlined,
         enabled: chunkNotDownloaded.isNotEmpty,
         onTap: () => _startMangaDownload(context, chunkNotDownloaded),
       ),
       (
         title: context.l10n.downloadAllChapters,
-        subtitle: '${allNotDownloaded.length} chapters',
+        subtitle: context.l10n.chapters2(allNotDownloaded.length.toString()),
         icon: Icons.file_download_outlined,
         enabled: allNotDownloaded.isNotEmpty,
         onTap: () => _startMangaDownload(context, allNotDownloaded),

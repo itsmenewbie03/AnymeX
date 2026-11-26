@@ -3,6 +3,7 @@ import 'package:anymex/widgets/non_widgets/snackbar.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 
 class AdSupportService with WidgetsBindingObserver {
   AdSupportService._() {
@@ -30,11 +31,11 @@ class AdSupportService with WidgetsBindingObserver {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched) {
         _isWatching = false;
-        snackBar('Could not open ad link');
+        snackBar(Get.context!.l10n.couldNotOpenAdLink);
       }
     } catch (_) {
       _isWatching = false;
-      snackBar('Could not open ad link');
+      snackBar(Get.context!.l10n.couldNotOpenAdLink);
     }
   }
 
@@ -60,11 +61,11 @@ class AdSupportService with WidgetsBindingObserver {
             General.watchedAdsCount.set(newCount);
             watchedCount.value = newCount;
             snackBar(
-              'Ad watch verified ($newCount total)! Points will be rewarded in the next update.',
+              Get.context!.l10n.adWatchVerifiedTotalPoints(newCount),
             );
           } else {
             snackBar(
-              'Returned too quickly (${elapsed}s). Watch for at least ${minWatchSeconds}s to verify.',
+              Get.context!.l10n.returnedTooQuicklySWatch(elapsed, minWatchSeconds),
             );
           }
         }

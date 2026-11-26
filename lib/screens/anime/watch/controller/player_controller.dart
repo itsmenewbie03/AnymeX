@@ -26,6 +26,9 @@ import 'package:anymex/models/player/player_adaptor.dart';
 import 'package:anymex/screens/anime/watch/controller/player_utils.dart';
 import 'package:anymex/utils/external_player.dart';
 import 'package:anymex/utils/pip_controller.dart';
+import 'package:anymex/screens/anime/watch/preview/seek_preview_engine.dart';
+import 'package:anymex/screens/anime/watch/chapters/models/playback_chapter.dart';
+import 'package:anymex/screens/anime/watch/chapters/services/intro_db_service.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/bottom_sheet.dart';
 import 'package:anymex/screens/anime/watch/player/base_player.dart';
 import 'package:anymex/screens/anime/watch/player/media_kit_player.dart';
@@ -128,7 +131,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
   }
 
   factory PlayerController.preview() {
-    final ep = Episode(number: '87', title: 'The Dawn of Humanity');
+    final ep = Episode(number: '87', title: Get.context!.l10n.theDawnOfHumanity);
     final previewVideo = model.Video(
       url: '',
       quality: '1080p',
@@ -142,7 +145,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       [Episode(number: '86'), ep, Episode(number: '88')],
       anymex.Media(
         id: '0',
-        title: 'Attack on Titan',
+        title: Get.context!.l10n.attackOnTitan,
         poster: '',
         serviceType: ServicesType.anilist,
       ),
@@ -256,6 +259,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
   final RxList<model.Track> localSubtitles = <model.Track>[].obs;
   final RxList<SubtitleCue> parsedSubtitleCues = <SubtitleCue>[].obs;
   final Rx<bool> isEpisodePaneOpened = false.obs;
+  final Rx<bool> isChaptersPaneOpened = false.obs;
   final Rx<bool> isSpeedPaneOpened = false.obs;
   final Rx<bool> isWatchTogetherPaneOpened = false.obs;
   final RxBool isTorrentFilesPaneOpened = false.obs;
@@ -281,6 +285,10 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
   Timer? _rpcSeekDebounceTimer;
   bool _hasAutoSelectedPreferredSub = false;
   aniskip.EpisodeSkipTimes? skipTimes;
+  final RxList<PlaybackChapter> chapters = <PlaybackChapter>[].obs;
+  final RxList<PlaybackSkipSegment> skipSegments = <PlaybackSkipSegment>[].obs;
+  SeekPreviewEngine? seekPreviewEngine;
+  final Rxn<Duration> scrubbingPosition = Rxn<Duration>();
   final isOPSkippedOnce = false.obs;
   final isEDSkippedOnce = false.obs;
   final isRecapSkippedOnce = false.obs;
@@ -439,7 +447,6 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         PlayerKeys.audioChannelLayout.get<String>('auto');
     _activeUseLibass = PlayerKeys.useLibass.get<bool>(false);
     _initializePlayer();
-    _updateRpc();
     if (!isOffline.value) {
       _initializeAniSkip();
     }
@@ -456,10 +463,11 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     }
     ever(selectedVideo, (_) => _autoSelectAudioTrack());
     _autoSelectAudioTrack();
+    _applyDebugDummyChapters();
     if (PlayerKeys.useLibass.get(false)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         snackBar(
-            "if subtitle is not showing up then disable libass in settings and restart",
+            Get.context!.l10n.ifSubtitleNotShowingDisableLibass,
             duration: 3000);
       });
     }
@@ -584,6 +592,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
   }
 
   Future<void> _updateRpc() async {
+    if (!Get.isRegistered<DiscordRPCController>()) return;
     if (isOffline.value) {
       await DiscordRPCController.instance.updateBrowsingPresence(
         activity: 'Watching Offline Video',
@@ -887,9 +896,9 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       if (currentOrientation.value != physicalOrientation.value) {
         _applyOrientation(physicalOrientation.value);
       }
-      snackBar('Orientation Unlocked');
+      snackBar(Get.context!.l10n.orientationUnlocked);
     } else {
-      snackBar('Orientation Locked');
+      snackBar(Get.context!.l10n.orientationLocked);
     }
   }
 
@@ -899,13 +908,13 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     _basePlayer.seek(duration);
     if (identical(skipTimes?.op, interval)) {
       isOPSkippedOnce.value = true;
-      snackBar('Skipped Opening', duration: 2000);
+      snackBar(Get.context!.l10n.skippedOpening, duration: 2000);
     } else if (identical(skipTimes?.ed, interval)) {
       isEDSkippedOnce.value = true;
-      snackBar('Skipped Ending', duration: 2000);
+      snackBar(Get.context!.l10n.skippedEnding, duration: 2000);
     } else if (identical(skipTimes?.recap, interval)) {
       isRecapSkippedOnce.value = true;
-      snackBar('Skipped Recap', duration: 2000);
+      snackBar(Get.context!.l10n.skippedRecap, duration: 2000);
     }
   }
 
@@ -935,8 +944,26 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     });
   }
 
+  void _applyDebugDummyChapters() {
+    if (!kDebugMode || chapters.isNotEmpty) return;
+    chapters.assignAll(const [
+      PlaybackChapter(title: 'Prologue', startSeconds: 0),
+      PlaybackChapter(title: 'Opening', startSeconds: 45),
+      PlaybackChapter(title: 'Part A', startSeconds: 135),
+      PlaybackChapter(title: 'Part B', startSeconds: 660),
+      PlaybackChapter(title: 'Ending', startSeconds: 1290),
+      PlaybackChapter(title: 'Next Episode Preview', startSeconds: 1380),
+    ]);
+  }
+
   void _updateSkipUiState() {
-    if (skipTimes == null) return;
+    if (!playerSettings.enableAniSkip || skipTimes == null) {
+      if (currentSkipInterval.value != null) {
+        currentSkipInterval.value = null;
+      }
+      _cancelAutoSkipTimer();
+      return;
+    }
 
     final currentSec = currentPosition.value.inSeconds;
     aniskip.SkipIntervals? foundInterval;
@@ -1028,7 +1055,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     final betterCore = PlayerCoreVisualSettings.getBetterPlayerCoreSettings();
     final decoderHwdec = _resolveDecoderHwdec();
     final bufferSizeMb = (useMediaKit
-            ? (mpvCore['demuxerMaxBytesMb'] as num? ?? 64)
+            ? (mpvCore['demuxerMaxBytesMb'] as num? ?? 32)
             : (betterCore['bufferSizeMb'] as num? ?? 32))
         .toInt();
 
@@ -1051,6 +1078,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     await _basePlayer.initialize();
     _isPlayerInitialized.value = true;
     _bindPlayerStreams();
+    _initSeekPreviewEngine();
     playerReloadVersion.value++;
     refresh();
 
@@ -1068,7 +1096,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
             startPositionOverride ?? Duration(milliseconds: stamp ?? 0),
       );
       await _basePlayer.setRate(_sessionSpeed);
-      snackBar('If you see black screen, use external player for watching');
+      snackBar(Get.context!.l10n.ifYouSeeBlackScreenUse);
     } else {
       await _openWithCloudFallback(
           startPositionOverride: startPositionOverride);
@@ -1166,7 +1194,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         currentTorrentInfo.value = null;
         currentTorrentFile.value = null;
         Logger.e('Failed to resolve torrent stream: $e');
-        snackBar('Failed to start torrent stream: $e');
+        snackBar(Get.context!.l10n.failedToStartTorrentStream(e.toString()));
         return;
       }
     } else {
@@ -1186,6 +1214,11 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     currentSkipInterval.value = null;
     _cancelAutoSkipTimer();
     _autoSkipCancelledForCurrentSegment = false;
+    if (!playerSettings.enableAniSkip) {
+      skipTimes = null;
+      skipSegments.clear();
+      return;
+    }
     String malId = anilistData.idMal;
     final serviceType = anilistData.serviceType;
 
@@ -1216,8 +1249,49 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       episodeNumber: currentEpisode.value.number,
       episodeLength: episodeLengthSec,
     );
-    aniskip.AniSkipApi().getSkipTimes(skipQuery).then((skipTimeResult) {
+    aniskip.AniSkipApi().getSkipTimes(skipQuery).then((skipTimeResult) async {
       skipTimes = skipTimeResult;
+      final parsedSegments = <PlaybackSkipSegment>[];
+      if (skipTimeResult != null) {
+        if (skipTimeResult.op != null) {
+          parsedSegments.add(PlaybackSkipSegment(
+            title: Get.context!.l10n.opening,
+            kind: PlaybackSegmentKind.opening,
+            startSeconds: skipTimeResult.op!.start.toDouble(),
+            endSeconds: skipTimeResult.op!.end.toDouble(),
+            source: 'AniSkip',
+          ));
+        }
+        if (skipTimeResult.ed != null) {
+          parsedSegments.add(PlaybackSkipSegment(
+            title: Get.context!.l10n.ending,
+            kind: PlaybackSegmentKind.ending,
+            startSeconds: skipTimeResult.ed!.start.toDouble(),
+            endSeconds: skipTimeResult.ed!.end.toDouble(),
+            source: 'AniSkip',
+          ));
+        }
+        if (skipTimeResult.recap != null) {
+          parsedSegments.add(PlaybackSkipSegment(
+            title: Get.context!.l10n.recap,
+            kind: PlaybackSegmentKind.recap,
+            startSeconds: skipTimeResult.recap!.start.toDouble(),
+            endSeconds: skipTimeResult.recap!.end.toDouble(),
+            source: 'AniSkip',
+          ));
+        }
+      }
+
+      if (parsedSegments.isEmpty) {
+        final epNum = int.tryParse(currentEpisode.value.number) ?? 1;
+        final introStamps = await IntroDbService.fetchSegments(
+          episode: epNum,
+          durationMs: currentEpisode.value.durationInMilliseconds,
+        );
+        parsedSegments.addAll(introStamps);
+      }
+
+      skipSegments.assignAll(parsedSegments);
     }).onError((error, stackTrace) {
       debugPrint('An error occurred: $error');
       debugPrint('Stack trace: $stackTrace');
@@ -1384,6 +1458,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         }
       }
       if (isOffline.value) return;
+      if (!Get.isRegistered<DiscordRPCController>()) return;
       if (!e) {
         DiscordRPCController.instance.updateAnimePresencePaused(
             anime: anilistData,
@@ -1435,6 +1510,16 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       }
     }));
 
+    _playerSubscriptions.add(_basePlayer.chaptersStream.listen((chaps) {
+      if (_isReloadingPlayer.value) return;
+      final list = chaps.cast<PlaybackChapter>();
+      if (list.isEmpty) {
+        _applyDebugDummyChapters();
+      } else {
+        chapters.assignAll(list);
+      }
+    }));
+
     _playerSubscriptions.add(_basePlayer.rateStream.listen((e) {
       if (_isReloadingPlayer.value) return;
       playbackSpeed.value = e;
@@ -1447,7 +1532,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       if (errorStr.contains('Failed to open') &&
           !errorStr.contains('.glsl') &&
           !errorStr.contains('Cannot open file')) {
-        snackBar('Failed to open stream. Please try other server');
+        snackBar(Get.context!.l10n.failedToOpenStreamPleaseTry);
       }
     }));
 
@@ -1661,17 +1746,22 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     if (showControls.value && !isMouseHovering.value) {
       _autoHideTimer = Timer(_autoHideDuration, () {
         if (!isMouseHovering.value &&
+            !isSeeking.value &&
+            scrubbingPosition.value == null &&
             !isSourcePaneOpened.value &&
             !isTracksPaneOpened.value &&
             !isAudioPaneOpened.value &&
             !isSyncSubsPaneOpened.value &&
             !isEpisodePaneOpened.value &&
+            !isChaptersPaneOpened.value &&
             !isTorrentFilesPaneOpened.value &&
             !isWatchTogetherPaneOpened.value &&
             !isSpeedPaneOpened.value &&
             !isSettingsPaneOpened.value &&
             !isCastPaneOpened.value) {
           showControls.value = false;
+        } else if (isSeeking.value || scrubbingPosition.value != null) {
+          _resetAutoHideTimer();
         }
       });
     }
@@ -1719,6 +1809,9 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       _resetAutoHideTimer();
     } else {
       _cancelAutoHideTimer();
+      if (isSeeking.value || scrubbingPosition.value != null) {
+        onScrubbingEnd();
+      }
     }
   }
 
@@ -1734,7 +1827,6 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
   Future<void> fetchEpisode(Episode episode, {Duration? savedPosition}) async {
     if (isOffline.value) {
-      // Support local file switching for offline episode list
       final videoPath = episode.link;
       if (videoPath == null || videoPath.isEmpty) return;
       _basePlayer.pause();
@@ -1745,6 +1837,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       }
       resetListeners();
       isEpisodePaneOpened.value = false;
+      isChaptersPaneOpened.value = false;
       isSourcePaneOpened.value = false;
       isTracksPaneOpened.value = false;
       isAudioPaneOpened.value = false;
@@ -1762,7 +1855,6 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         startPosition: Duration(milliseconds: stamp ?? 0),
       );
       await _basePlayer.setRate(_sessionSpeed);
-      // Update the selected video and offline path tracking
       final offlineVideo =
           episode.videoTracks?.firstWhereOrNull((v) => v.url == videoPath) ??
               model.Video(
@@ -1793,7 +1885,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
       if (data.isEmpty) {
         PlayerBottomSheets.hideLoader();
-        snackBar('No servers found for this episode.');
+        snackBar(Get.context!.l10n.noServersFoundForThisEpisode);
         isEpisodePaneOpened.value = true;
         return;
       }
@@ -1838,7 +1930,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       await _switchMedia(matched.url ?? "", matched.headers,
           startPosition: startPosition);
     } catch (e) {
-      snackBar('Failed to load episode. Check your connection.');
+      snackBar(Get.context!.l10n.failedToLoadEpisodeCheckYour);
     } finally {
       PlayerBottomSheets.hideLoader();
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -2078,7 +2170,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         currentTorrentInfo.value = null;
         currentTorrentFile.value = null;
         Logger.e('Failed to resolve torrent stream: $e');
-        snackBar('Failed to start torrent stream: $e');
+        snackBar(Get.context!.l10n.failedToStartTorrentStream(e.toString()));
         return;
       }
     } else {
@@ -2106,13 +2198,13 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       await _basePlayer.setRate(_sessionSpeed);
       _autoSelectAudioTrack();
       AnymeXToast.show(
-        message: 'Playing ${p.basename(file.path)}',
+        message: Get.context!.l10n.playing((p.basename(file.path)).toString()),
       );
     } catch (e) {
       _isTorrentBuffering = false;
       isBuffering.value = false;
       Logger.e('Failed to switch torrent file: $e');
-      snackBar('Failed to switch torrent file: $e');
+      snackBar(Get.context!.l10n.failedToSwitchTorrentFile(e.toString()));
     }
   }
 
@@ -2150,7 +2242,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     }
 
     _revertOrientations();
-    if (!isOffline.value) {
+    if (!isOffline.value && Get.isRegistered<DiscordRPCController>()) {
       DiscordRPCController.instance.updateMediaPresence(media: anilistData);
     }
 
@@ -2162,6 +2254,11 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
         Logger.e('Error stopping http server: $e');
       }
     }
+
+    try {
+      await seekPreviewEngine?.dispose();
+      seekPreviewEngine = null;
+    } catch (_) {}
 
     await _basePlayer.dispose();
 
@@ -2193,6 +2290,50 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     ]);
   }
 
+  void _initSeekPreviewEngine() {
+    if (!settings.enableSeekPreview.value) return;
+    if (_basePlayer is! MediaKitPlayer) return;
+
+    seekPreviewEngine = SeekPreviewEngine(
+      mainPlayerProvider: () => _basePlayer as MediaKitPlayer,
+      streamUrlProvider: () => isOffline.value ? offlineVideoPath : selectedVideo.value?.url,
+      headersProvider: () => selectedVideo.value?.headers ?? const {},
+    );
+  }
+
+  void onScrubbingUpdate(Duration pos) {
+    isSeeking.value = true;
+    _cancelAutoHideTimer();
+    scrubbingPosition.value = pos;
+    if (settings.enableSeekPreview.value && seekPreviewEngine != null) {
+      seekPreviewEngine!.seek(pos);
+    }
+  }
+
+  void onScrubbingEnd() {
+    isSeeking.value = false;
+    final target = scrubbingPosition.value;
+    scrubbingPosition.value = null;
+    seekPreviewEngine?.stop();
+    if (target != null) {
+      seekTo(target);
+    }
+    _resetAutoHideTimer();
+  }
+
+  String? getChapterTitleAt(Duration pos) {
+    if (chapters.isEmpty) return null;
+    final posSec = pos.inMilliseconds / 1000.0;
+    for (int i = 0; i < chapters.length; i++) {
+      final ch = chapters[i];
+      final nextStart = i + 1 < chapters.length ? chapters[i + 1].startSeconds : double.infinity;
+      if (posSec >= ch.startSeconds && posSec < nextStart) {
+        return ch.title;
+      }
+    }
+    return null;
+  }
+
   void seekTo(Duration pos) {
     currentPosition.value = pos;
 
@@ -2204,6 +2345,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     _rpcSeekDebounceTimer?.cancel();
     _rpcSeekDebounceTimer = Timer(const Duration(seconds: 10), () {
       if (isClosed || isOffline.value) return;
+      if (!Get.isRegistered<DiscordRPCController>()) return;
       currentEpisode.value.timeStampInMilliseconds =
           currentPosition.value.inMilliseconds;
       if (isPlaying.value) {
@@ -2444,10 +2586,10 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
           localSubtitles.add(track);
         }
         setExternalSub(track);
-        AnymeXToast.show(message: 'Subtitle loaded: $fileName');
+        AnymeXToast.show(message: Get.context!.l10n.subtitleLoaded(fileName.toString()));
       }
     } catch (e) {
-      AnymeXToast.show(message: 'Error loading subtitle: $e');
+      AnymeXToast.show(message: Get.context!.l10n.errorLoadingSubtitle(e.toString()));
     }
   }
 
@@ -2466,7 +2608,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     }
 
     if (track.file?.isEmpty ?? true) {
-      snackBar('Corrupted Subtitle!');
+      snackBar(Get.context!.l10n.corruptedSubtitle);
       return;
     }
 
@@ -2579,7 +2721,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
     isPreTranslating.value = true;
     preTranslateProgress.value = 'Starting translation...';
-    snackBar('Pre-translating subtitles...');
+    snackBar(Get.context!.l10n.preTranslatingSubtitles);
 
     try {
       final success = await SubtitlePreTranslator.preTranslateFromUrl(
@@ -2589,13 +2731,13 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
       if (success) {
         snackBar(
-            'Subtitles translated! (${SubtitlePreTranslator.totalEntries} entries)');
+            Get.context!.l10n.subtitlesTranslatedEntries(SubtitlePreTranslator.totalEntries));
       } else {
-        snackBar('Pre-translation failed, using real-time fallback');
+        snackBar(Get.context!.l10n.preTranslationFailedUsingRealTime);
       }
     } catch (e) {
       Logger.e('[PlayerController] Pre-translation error: $e');
-      snackBar('Pre-translation error, using real-time fallback');
+      snackBar(Get.context!.l10n.preTranslationErrorUsingRealTime);
     }
 
     isPreTranslating.value = false;
@@ -2604,7 +2746,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
   void setServerTrack(model.Video track) async {
     if (track.url?.isEmpty ?? true) {
-      snackBar('Corrupted Quality!');
+      snackBar(Get.context!.l10n.corruptedQuality);
       return;
     }
 
@@ -2845,7 +2987,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
       if (episode.filler != true) {
         if (skippedCount > 0) {
           snackBar(
-              'Skipped $skippedCount filler episode${skippedCount > 1 ? 's' : ''}');
+              Get.context!.l10n.skippedFillerEpisodesCount(skippedCount));
         }
         return episode;
       }
@@ -2868,6 +3010,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
     _basePlayer.pause();
     unawaited(_basePlayer.stop());
     isEpisodePaneOpened.value = false;
+    isChaptersPaneOpened.value = false;
     isSourcePaneOpened.value = false;
     isTracksPaneOpened.value = false;
     isAudioPaneOpened.value = false;
@@ -2891,6 +3034,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
 
   void closePanes() {
     isEpisodePaneOpened.value = false;
+    isChaptersPaneOpened.value = false;
     isSourcePaneOpened.value = false;
     isTracksPaneOpened.value = false;
     isAudioPaneOpened.value = false;
@@ -2909,7 +3053,7 @@ class PlayerController extends GetxController with WidgetsBindingObserver {
             context, this, (_basePlayer as MediaKitPlayer).nativePlayer);
       });
     } else {
-      snackBar('Color profiles only available with MediaKit player');
+      snackBar(context.l10n.colorProfilesOnlyAvailableWithMediakit);
     }
   }
 

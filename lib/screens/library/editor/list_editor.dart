@@ -111,9 +111,8 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
           .where((e) => e.hasRequiredHistoryMedia(ItemType.manga))
           .toList());
     }
-    return offlineStorage.watchNovelLibrary().map((items) => items
-        .where((e) => e.hasRequiredHistoryMedia(ItemType.novel))
-        .toList());
+    return offlineStorage.watchNovelLibrary().map((items) =>
+        items.where((e) => e.hasRequiredHistoryMedia(ItemType.novel)).toList());
   }
 
   void _confirmClearHistory(List<OfflineMedia> items) {
@@ -123,7 +122,7 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
     AnymeXDialog(
       title: context.l10n.clearHistory,
       message:
-          'Are you sure you want to clear all $label? This action cannot be undone.',
+          context.l10n.areYouSureYouWant2(label),
       confirmText: context.l10n.clearAll,
       onConfirm: () async {
         final ids = items
@@ -445,8 +444,7 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
             .opaque(0.45, iReallyMeanIt: true),
         borderRadius: radius,
         border: Border.all(
-          color: theme.colorScheme.onSurface
-              .opaque(0.08, iReallyMeanIt: true),
+          color: theme.colorScheme.onSurface.opaque(0.08, iReallyMeanIt: true),
           width: 0.8,
         ),
       ),
@@ -486,7 +484,7 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
                       ),
                       const SizedBox(height: 2),
                       AnymeXText(
-                        '${listData.listData.length} items',
+                        context.l10n.itemsCount(listData.listData.length),
                         size: 12,
                         color: theme.colorScheme.onSurface
                             .opaque(0.45, iReallyMeanIt: true),
@@ -559,7 +557,7 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
           ),
           const SizedBox(height: 8),
           AnymeXText(
-            'Create your first custom list to organize\nyour favorite content',
+            context.l10n.createYourFirstCustomList,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: theme.colorScheme.onSurface.opaque(0.6),
@@ -670,7 +668,7 @@ class _CustomListsEditorState extends State<CustomListsEditor> {
     AnymeXDialog(
       title: context.l10n.deleteList,
       message:
-          'Are you sure you want to delete "${_lists[index].listName}"? This action cannot be undone.',
+          context.l10n.areYouSureYouWant3(_lists[index].listName),
       confirmText: context.l10n.delete,
       onConfirm: () {
         setState(() {
@@ -779,7 +777,7 @@ class __ListMediaEditorBottomSheetState
     });
     widget.onListChanged();
     HapticFeedback.lightImpact();
-    snackBar('Removed "$itemName"');
+    snackBar(context.l10n.removed(itemName.toString()));
   }
 
   void _deleteSelectedItems() {
@@ -869,7 +867,7 @@ class __ListMediaEditorBottomSheetState
                         ),
                         const SizedBox(height: 2),
                         AnymeXText(
-                          '${allItems.length} items total',
+                          context.l10n.itemsTotal(allItems.length),
                           style: TextStyle(
                             color: colors.onSurface.withOpacity(0.5),
                             fontSize: 13,
@@ -899,9 +897,9 @@ class __ListMediaEditorBottomSheetState
                       height: 46,
                       decoration: BoxDecoration(
                         color: colors.surfaceContainer.withOpacity(0.4),
-                            borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(12),
-                                right: Radius.circular(5)),
+                        borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(12),
+                            right: Radius.circular(5)),
                         border:
                             Border.all(color: colors.outline.withOpacity(0.1)),
                       ),
@@ -955,8 +953,8 @@ class __ListMediaEditorBottomSheetState
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                                                    border:
-                            Border.all(color: colors.outline.withOpacity(0.1)),
+                            border: Border.all(
+                                color: colors.outline.withOpacity(0.1)),
                             color: colors.surfaceContainer.withOpacity(0.4),
                             borderRadius: const BorderRadius.horizontal(
                                 right: Radius.circular(12),

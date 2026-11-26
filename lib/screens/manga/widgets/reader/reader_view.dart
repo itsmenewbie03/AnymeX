@@ -18,6 +18,7 @@ import 'package:get/get.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 
 class ReaderView extends StatefulWidget {
   final ReaderController controller;
@@ -102,13 +103,13 @@ class _ReaderViewState extends State<ReaderView> with TickerProviderStateMixin {
   }
 
   Widget _buildLoadingView(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnymeXProgressIndicator(),
-          SizedBox(height: 16),
-          AnymeXText('Loading pages...'),
+          const AnymeXProgressIndicator(),
+          const SizedBox(height: 16),
+          AnymeXText(context.l10n.loadingPages),
         ],
       ),
     );
@@ -128,7 +129,7 @@ class _ReaderViewState extends State<ReaderView> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 16),
             AnymeXText(
-              'Failed to load chapter',
+              context.l10n.failedToLoadChapter,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
@@ -149,13 +150,13 @@ class _ReaderViewState extends State<ReaderView> with TickerProviderStateMixin {
                 ElevatedButton.icon(
                   onPressed: widget.controller.retryFetchImages,
                   icon: const Icon(Icons.refresh),
-                  label: const AnymeXText('Retry'),
+                  label: AnymeXText(context.l10n.actionRetry),
                 ),
                 const SizedBox(width: 16),
                 OutlinedButton.icon(
                   onPressed: () => Get.back(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const AnymeXText('Go Back'),
+                  label: AnymeXText(context.l10n.goBack),
                 ),
               ],
             ),
@@ -199,6 +200,28 @@ class _ReaderViewState extends State<ReaderView> with TickerProviderStateMixin {
              0,  0, -1, 0, 255,
              0,  0,  0, 1,   0,
           ]),
+          child: readerContent,
+        );
+      }
+
+      if (widget.controller.enhanceColorsEnabled.value) {
+        final isManga = widget.controller.enhanceColorsProfile.value == 'manga';
+        readerContent = ColorFiltered(
+          colorFilter: ColorFilter.matrix(
+            isManga
+                ? const [
+                    1.18, 0.0, 0.0, 0.0, -23.0,
+                    0.0, 1.18, 0.0, 0.0, -23.0,
+                    0.0, 0.0, 1.18, 0.0, -23.0,
+                    0.0, 0.0, 0.0, 1.0, 0.0,
+                  ]
+                : const [
+                    1.403, -0.294, -0.030, 0.0, -10.2,
+                    -0.087, 1.197, -0.030, 0.0, -10.2,
+                    -0.087, -0.294, 1.461, 0.0, -10.2,
+                    0.0, 0.0, 0.0, 1.0, 0.0,
+                  ],
+          ),
           child: readerContent,
         );
       }
@@ -403,7 +426,7 @@ class _ReaderViewState extends State<ReaderView> with TickerProviderStateMixin {
           children: [
             AnymeXProgressIndicator(value: progress),
             const SizedBox(height: 8),
-            AnymeXText('Loading page ${pageIndex + 1}$progressText...'),
+            AnymeXText(context.l10n.loadingPage2((pageIndex + 1).toString(), progressText.toString())),
           ],
         ),
       ),

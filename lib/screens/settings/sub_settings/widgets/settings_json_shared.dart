@@ -1,5 +1,4 @@
 import 'package:anymex/l10n/l10n_extension.dart';
-import 'package:get/get.dart';
 import 'dart:convert';
 
 import 'package:anymex/screens/anime/watch/controls/themes/setup/player_control_theme_registry.dart';
@@ -133,7 +132,7 @@ class JsonThemesSheetState extends State<JsonThemesSheet>
           builder: (ctx) => AlertDialog(
             title: AnymeXText(context.l10n.removeTheme),
             icon: const Icon(Icons.delete_forever_rounded),
-            content: AnymeXText('Remove "$id"? This cannot be undone.'),
+            content: AnymeXText(context.l10n.removeThisCannotBeUndone(id.toString())),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
@@ -320,7 +319,7 @@ class _ImportActionsRow extends StatelessWidget {
                         strokeWidth: 2.5, color: context.colors.onPrimary),
                   )
                 : const Icon(Icons.file_open_rounded),
-            label: AnymeXText(isImporting ? 'Importing…' : 'Add JSON Files'),
+            label: AnymeXText(isImporting ? context.l10n.importing : context.l10n.addJsonFiles),
           ),
         ),
         const SizedBox(width: 10),
@@ -506,7 +505,7 @@ class _EmptyState extends StatelessWidget {
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           AnymeXText(
-            'Add JSON files or paste a URL\nto install custom themes.',
+            context.l10n.addJsonFilesOrPaste,
             textAlign: TextAlign.center,
             style:
                 tt.bodySmall?.copyWith(color: context.colors.onSurfaceVariant),

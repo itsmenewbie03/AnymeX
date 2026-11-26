@@ -34,6 +34,7 @@ import 'package:anymex/utils/background_service_handler.dart';
 import 'package:anymex/controllers/services/torrent/torrent_service.dart';
 import 'package:anymex/widgets/non_widgets/snackbar.dart';
 import 'package:anymex/utils/notification.dart';
+import 'package:anymex/utils/app_directories.dart';
 
 class DownloadController extends GetxController {
   final RxList<ActiveDownloadTask> activeTasks = <ActiveDownloadTask>[].obs;
@@ -608,7 +609,7 @@ class DownloadController extends GetxController {
     await _loadIndex();
     _notifyDownloadComplete(
       title: task.mediaTitle,
-      subtitle: 'Episode ${task.episode.number}',
+      subtitle: Get.context!.l10n.episode2(task.episode.number.toString()),
       posterUrl: task.media?.poster ?? task.media?.cover,
       isManga: false,
       mediaId: task.media?.id.toString(),
@@ -647,7 +648,7 @@ class DownloadController extends GetxController {
     if (!enabled) return;
     NotificationService.instance.showRichNotification(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: 'Download Completed',
+      title: Get.context!.l10n.downloadCompleted,
       body: '$title - $subtitle',
       imageUrl: posterUrl,
       channelId: 'downloads',
@@ -686,7 +687,7 @@ class DownloadController extends GetxController {
     _saveActiveTasks();
     _notifyDownloadComplete(
       title: task.mediaTitle,
-      subtitle: 'Episode ${task.episode.number}',
+      subtitle: Get.context!.l10n.episode2(task.episode.number.toString()),
       posterUrl: task.media?.poster ?? task.media?.cover,
       isManga: false,
       mediaId: task.media?.id.toString(),
@@ -1259,7 +1260,7 @@ class DownloadController extends GetxController {
       if (chapterUrl == null || chapterUrl.isEmpty) {
         task.status = MangaDownloadStatus.failed;
         task.errorMessage = 'Chapter has no URL';
-        snackBar('Download failed: ${task.chapterDisplay} has no URL');
+        snackBar(Get.context!.l10n.downloadFailedHasNoUrl(task.chapterDisplay.toString()));
         activeMangaTasks.refresh();
         return;
       }
@@ -1271,7 +1272,7 @@ class DownloadController extends GetxController {
       if (pages.isEmpty) {
         task.status = MangaDownloadStatus.failed;
         task.errorMessage = 'No pages found for this chapter';
-        snackBar('Download failed: No pages found for ${task.chapterDisplay}');
+        snackBar(Get.context!.l10n.downloadFailedNoPagesFoundFor(task.chapterDisplay.toString()));
         activeMangaTasks.refresh();
         return;
       }
@@ -1330,7 +1331,7 @@ class DownloadController extends GetxController {
     } catch (e) {
       task.status = MangaDownloadStatus.failed;
       task.errorMessage = e.toString();
-      snackBar('Download failed: ${task.chapterDisplay}');
+      snackBar(Get.context!.l10n.downloadFailed(task.chapterDisplay.toString()));
     } finally {
       activeMangaTasks.refresh();
       _saveMangaActiveTasks();
@@ -1629,7 +1630,7 @@ class DownloadController extends GetxController {
         return Directory(p.join(ext.path, 'AnymeX', 'Downloads'));
       }
     }
-    final docs = await getApplicationDocumentsDirectory();
+    final docs = await getAppDocumentsDirectory();
     return Directory(p.join(docs.path, 'AnymeX', 'Downloads'));
   }
 
@@ -2416,7 +2417,7 @@ class DownloadController extends GetxController {
                 final newEp = DownloadedEpisodeMeta(
                   episode: Episode(
                     number: epNum,
-                    title: 'Episode $epNum',
+                    title: Get.context!.l10n.episode3(epNum.toString()),
                     sortKeys: sortMap.keys.toList(),
                     sortVals: sortMap.values.toList(),
                   ),

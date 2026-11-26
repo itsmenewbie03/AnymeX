@@ -107,7 +107,7 @@ class _TapZoneSettingsScreenState extends State<TapZoneSettingsScreen> {
       headerTitle: context.l10n.tapZones,
       headerAction: IconButton(
         icon: const Icon(Icons.refresh_rounded),
-        tooltip: 'Reset to default',
+        tooltip: context.l10n.resetToDefault,
         onPressed: _resetDefaults,
       ),
       body: Builder(
@@ -134,8 +134,8 @@ class _TapZoneSettingsScreenState extends State<TapZoneSettingsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                       child: _ElegantSegmentedControl(
                         options: [
-                          (title: context.l10n.horizontal, icon: Icon(Icons.swap_horiz_rounded, size: 18)),
-                          (title: context.l10n.vertical, icon: Icon(Icons.swap_vert_rounded, size: 18)),
+                          (title: context.l10n.horizontal, icon: const Icon(Icons.swap_horiz_rounded, size: 18)),
+                          (title: context.l10n.vertical, icon: const Icon(Icons.swap_vert_rounded, size: 18)),
                         ],
                         selectedIndex: _isVertical ? 1 : 0,
                         onChanged: (index) {

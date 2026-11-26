@@ -35,6 +35,7 @@ class UISettings {
   bool enableImmersiveMode;
   int navBarStyle;
   int tileStyle;
+  int tileIconShape;
   String appFontFamily;
   double appFontScale;
   double bottomNavBarMargin;
@@ -80,6 +81,7 @@ class UISettings {
     this.enableImmersiveMode = false,
     this.navBarStyle = 1,
     this.tileStyle = 1,
+    this.tileIconShape = 0,
     this.appFontFamily = '',
     this.appFontScale = 1.0,
     this.bottomNavBarMargin = 32.0,
@@ -228,6 +230,8 @@ class UISettings {
           .get<bool>(uiDefaults.enableImmersiveMode),
       navBarStyle: UISettingsKeys.navBarStyle.get<int>(uiDefaults.navBarStyle),
       tileStyle: UISettingsKeys.tileStyle.get<int>(uiDefaults.tileStyle),
+      tileIconShape:
+          UISettingsKeys.tileIconShape.get<int>(uiDefaults.tileIconShape),
       appFontFamily:
           UISettingsKeys.appFontFamily.get<String>(uiDefaults.appFontFamily),
       appFontScale:

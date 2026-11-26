@@ -1,3 +1,4 @@
+import 'package:anymex/l10n/l10n_extension.dart';
 import 'package:anymex/models/Media/character.dart';
 import 'package:anymex/models/Media/media.dart';
 import 'package:anymex/screens/anime/widgets/character_staff_sheet.dart';
@@ -7,6 +8,7 @@ import 'package:anymex/utils/ui_extensions/sizing.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_image.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
 import 'package:flutter/material.dart';
+import 'package:anymex/l10n/ui_labels.dart';
 
 Widget buildCharactersSection(BuildContext context, Media media) {
   final characters = media.characters ?? [];
@@ -17,7 +19,7 @@ Widget buildCharactersSection(BuildContext context, Media media) {
     children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: AnymeXText('Characters${media.mediaType.isManga ? '' : ' & Voice Actors'}',
+        child: AnymeXText(media.mediaType.isManga ? context.l10n.characters : context.l10n.charactersAndVoiceActors,
           size: 16,
           variant: TextVariant.bold,
           color: context.colors.primary,
@@ -121,14 +123,14 @@ Widget buildCharacterCard(BuildContext context, Character character) {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AnymeXText(character.name ?? 'Unknown',
+                AnymeXText(character.name ?? context.l10n.unknown,
                   size: 13,
                   variant: TextVariant.bold,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                AnymeXText(character.role ?? 'Main',
+                AnymeXText(uiLabel(context.l10n, character.role ?? 'Main'),
                   size: 11,
                   color: colors.onSurface.opaque(0.6, iReallyMeanIt: true),
                 ),
@@ -139,7 +141,7 @@ Widget buildCharacterCard(BuildContext context, Character character) {
                       Icon(Icons.mic_rounded, size: 12, color: colors.primary),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: AnymeXText(va.name ?? 'Unknown VA',
+                        child: AnymeXText(va.name ?? context.l10n.unknownVa,
                           size: 11,
                           variant: TextVariant.semiBold,
                           color: colors.primary,

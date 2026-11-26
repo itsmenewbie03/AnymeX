@@ -120,7 +120,7 @@ class _DownloadedMediaViewState extends State<DownloadedMediaView> {
     AnymeXDialog(
       title: context.l10n.deleteEpisodeQuestion,
       message:
-          'Episode ${ep.number} will be permanently removed from your downloads.',
+          context.l10n.episodeNumber(ep.number),
       onConfirm: () async {
         _showLoadingDialog(context, 'Deleting episode...');
         try {
@@ -147,7 +147,7 @@ class _DownloadedMediaViewState extends State<DownloadedMediaView> {
     final display = ch.displayTitle;
     AnymeXDialog(
       title: context.l10n.deleteChapterQuestion,
-      message: '$display will be permanently removed from your downloads.',
+      message: context.l10n.willBePermanentlyRemovedFromYour(display.toString()),
       onConfirm: () async {
         _showLoadingDialog(context, 'Deleting chapter...');
         try {
@@ -1238,7 +1238,7 @@ class _DownloadedMediaViewState extends State<DownloadedMediaView> {
                                     ),
                                   ),
                                   child: AnymeXText(
-                                    '${chapter.pageCount} PAGES',
+                                    context.l10n.pages((chapter.pageCount).toString()),
                                     style: TextStyle(
                                       fontFamily: 'Linotte',
                                       fontSize: 9.0,

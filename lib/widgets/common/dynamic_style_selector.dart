@@ -1,5 +1,4 @@
 import 'package:anymex/l10n/l10n_extension.dart';
-import 'package:get/get.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_tile_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
@@ -23,7 +22,8 @@ class DynamicStyleSelector<T> extends StatefulWidget {
   });
 
   @override
-  State<DynamicStyleSelector<T>> createState() => _DynamicStyleSelectorState<T>();
+  State<DynamicStyleSelector<T>> createState() =>
+      _DynamicStyleSelectorState<T>();
 }
 
 class _DynamicStyleSelectorState<T> extends State<DynamicStyleSelector<T>> {

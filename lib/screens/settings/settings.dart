@@ -151,8 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     badge: item.title == 'App Language'
                         ? AnymeXBadge.newBadge(context)
                         : null,
-                    subtitle:
-                        settingsLabel(context.l10n, item.section ?? category),
+                    subtitle: settingsLabel(context.l10n, item.section ?? category),
                     onTap: () async {
                       final builder = SettingsRegistry.categoryRoutes[category];
                       if (builder != null) {

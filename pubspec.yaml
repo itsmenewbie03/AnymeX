@@ -1,7 +1,7 @@
 name: anymex
 description: "An Multiservice Tracking Client"
 publish_to: "https://github.com/RyanYuuki/AnymeX"
-version: 3.2.0+42
+version: 3.2.1+43
 
 environment:
     sdk: ">=3.4.4 <4.0.0"
@@ -131,7 +131,6 @@ dependencies:
     crypto: any
     flutter_cache_manager: any
     encrypt: any
-    material3_expressive_loading_indicator: ^0.1.2
     dlna_dart: ^0.1.1
     xml: ^6.5.0
 #    liquid_glass_widgets: ^1.16.1
@@ -250,6 +249,6 @@ inno_bundle:
     id: 8fbd47cb-d6e1-5343-a9f6-61661647c94c
     publisher: Ryan Yuuki
     name: AnymeX
-    version: 3.2.0
+    version: 3.2.1
     admin: auto
     installer_icon: ./anymex.ico

@@ -413,7 +413,7 @@ class _RestorePreviewSheetState extends State<RestorePreviewSheet> {
                 ),
               ),
               AnymeXText(
-                "$listCount lists",
+                context.l10n.lists(listCount),
                 style: TextStyle(
                   fontSize: 11,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -641,7 +641,7 @@ class _RestorePreviewSheetState extends State<RestorePreviewSheet> {
                   AnymeXTile.checkbox(
                     icon: Icons.movie_filter_rounded,
                     title: context.l10n.animeLibrary,
-                    subtitle: "${widget.info['animeCount'] ?? 0} titles",
+                    subtitle: context.l10n.titles((widget.info['animeCount'] ?? 0).toString()),
                     value: _options.anime,
                     onChanged: (v) => setState(() => _options.anime = v),
                   ),
@@ -649,7 +649,7 @@ class _RestorePreviewSheetState extends State<RestorePreviewSheet> {
                   AnymeXTile.checkbox(
                     icon: Icons.menu_book_rounded,
                     title: context.l10n.mangaLibrary,
-                    subtitle: "${widget.info['mangaCount'] ?? 0} titles",
+                    subtitle: context.l10n.titles((widget.info['mangaCount'] ?? 0).toString()),
                     value: _options.manga,
                     onChanged: (v) => setState(() => _options.manga = v),
                   ),
@@ -657,7 +657,7 @@ class _RestorePreviewSheetState extends State<RestorePreviewSheet> {
                   AnymeXTile.checkbox(
                     icon: Icons.auto_stories_rounded,
                     title: context.l10n.novelLibrary,
-                    subtitle: "${widget.info['novelCount'] ?? 0} titles",
+                    subtitle: context.l10n.titles((widget.info['novelCount'] ?? 0).toString()),
                     value: _options.novel,
                     onChanged: (v) => setState(() => _options.novel = v),
                   ),
@@ -1253,7 +1253,7 @@ class _ExportBackupSheetState extends State<ExportBackupSheet> {
                         icon: Icons.settings_input_component_rounded,
                         title: context.l10n.extensionConfigurationsRepos,
                         subtitle:
-                            "$_extensionsDataCount registered repositories and source settings",
+                            context.l10n.repositoriesAndSourceSettings(_extensionsDataCount),
                         value: _options.extensionsData,
                         onChanged: (v) =>
                             setState(() => _options.extensionsData = v),

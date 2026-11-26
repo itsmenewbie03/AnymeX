@@ -8,21 +8,25 @@ import 'package:anymex/screens/anime/watch/controls/themes/setup/media_indicator
 import 'package:anymex/screens/anime/watch/controls/themes/setup/media_indicator_theme_registry.dart';
 import 'package:anymex/screens/anime/watch/controls/themes/setup/player_control_theme_registry.dart';
 import 'package:anymex/screens/anime/watch/controls/widgets/player_control_buttons.dart';
+import 'package:anymex/screens/anime/watch/controls/widgets/progress_slider.dart';
 import 'package:anymex/screens/settings/sub_settings/widgets/settings_json_shared.dart';
 import 'package:anymex/utils/subtitle_style_renderer.dart';
 import 'package:anymex/utils/theme_extensions.dart';
-import 'package:anymex/widgets/anymex_widgets/anymex_chip.dart';
+import 'package:anymex/widgets/anymex_widgets/anymex_popup_menu.dart';
+import 'package:anymex/widgets/common/anymex_pills.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_container.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_dialog.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_section_builder.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_text.dart';
 import 'package:anymex/widgets/anymex_widgets/anymex_tile.dart';
+import 'package:anymex/widgets/anymex_widgets/anymex_tile_builder.dart';
 import 'package:anymex/widgets/common/anymex_scaffold.dart';
 import 'package:anymex/widgets/helper/platform_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 
 const String _previewAnimeImage =
     'https://i.pinimg.com/736x/f8/a1/fd/f8a1fdf302b56743ee6fbd6deb648921.jpg';
@@ -287,9 +291,9 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
     String selectedId = settings.playerControlTheme;
 
     await AnymeXDialog(
-      title: 'Player Theme',
+      title: context.l10n.playerTheme,
       showCancelButton: false,
-      confirmText: 'Done',
+      confirmText: context.l10n.actionDone,
       padding: const EdgeInsets.all(20),
       width: getResponsiveValue(
         context,
@@ -341,15 +345,15 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                         bottom: 58,
                         child: Center(
                           child: buildStyledSubtitleText(
-                            text: 'Freedom',
+                            text: context.l10n.freedom,
                             textColor:
                                 fontColorOptions[settings.subtitleColor] ??
                                     fontColorOptions['Default']!,
                             fontSize: 15,
                             fontFamily: resolveSubtitleFontFamily(
                                 settings.playerSettings.value.subtitleFont),
-                            outlineType:
-                                settings.playerSettings.value.subtitleOutlineType,
+                            outlineType: settings
+                                .playerSettings.value.subtitleOutlineType,
                             outlineWidth:
                                 settings.subtitleOutlineWidth.toDouble(),
                             outlineColor:
@@ -432,6 +436,72 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
     if (mounted) setState(() {});
   }
 
+  String _getSliderStyleLabel(BuildContext context, String style) {
+    switch (style.toLowerCase()) {
+      case 'wavy':
+        return context.l10n.linearWavy;
+      case 'capsule':
+        return context.l10n.capsule;
+      case 'ios':
+        return 'iOS';
+      case 'defaultm3':
+      default:
+        return context.l10n.defaultM3;
+    }
+  }
+
+  Future<void> _showSliderStyleDialog(BuildContext context) async {
+    final styles = [
+      {'id': 'wavy', 'name': context.l10n.linearWavy},
+      {'id': 'defaultm3', 'name': context.l10n.defaultM3},
+      {'id': 'capsule', 'name': context.l10n.capsule},
+      {'id': 'ios', 'name': 'iOS'},
+    ];
+    String selectedId = settings.progressSliderStyle;
+
+    await AnymeXDialog(
+      title: context.l10n.progressSliderStyle,
+      showCancelButton: false,
+      confirmText: context.l10n.done,
+      padding: const EdgeInsets.all(20),
+      width: getResponsiveValue(
+        context,
+        mobileValue: double.infinity,
+        desktopValue: 460.0,
+      ),
+      onConfirm: () {},
+      contentWidget: StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return AnymeXTileBuilder<Map<String, String>>(
+            items: styles,
+            selectedItem: styles.firstWhere(
+              (s) => s['id'] == selectedId,
+              orElse: () => styles[1],
+            ),
+            isSelected: (s) => s['id'] == selectedId,
+            getTitle: (s) => s['name']!,
+            getSubtitleWidget: (s) => Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: IgnorePointer(
+                child: ProgressSliderPreview(
+                  style: parseSliderStyle(s['id']!),
+                ),
+              ),
+            ),
+            onItemPressed: (s) {
+              setDialogState(() {
+                selectedId = s['id']!;
+                settings.progressSliderStyle = s['id']!;
+              });
+            },
+          );
+        },
+      ),
+    ).show(context);
+
+    if (mounted) setState(() {});
+  }
+
   Future<void> _showMediaIndicatorThemeDialog() async {
     final hadController = Get.isRegistered<PlayerController>();
     final previewController = _acquirePreviewPlayerController();
@@ -441,9 +511,9 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
     double value = 0.65;
 
     await AnymeXDialog(
-      title: 'Swipe Indicator Theme',
+      title: context.l10n.swipeIndicatorTheme,
       showCancelButton: false,
-      confirmText: 'Done',
+      confirmText: context.l10n.actionDone,
       padding: const EdgeInsets.all(20),
       width: getResponsiveValue(
         context,
@@ -560,9 +630,9 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
         PlayerUiKeys.volumeGestureWidth.get<double>(0.35).clamp(0.10, 0.45);
 
     await AnymeXDialog(
-      title: 'Gesture Areas',
-      confirmText: 'Save',
-      cancelText: 'Cancel',
+      title: context.l10n.gestureAreas,
+      confirmText: context.l10n.actionSave,
+      cancelText: context.l10n.actionCancel,
       padding: const EdgeInsets.all(20),
       width: getResponsiveValue(
         context,
@@ -628,7 +698,7 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                       volumeWidth = 0.35;
                     });
                   },
-                  child: const AnymeXText('Reset Default', size: 12),
+                  child: AnymeXText(context.l10n.resetDefault, size: 12),
                 ),
               ),
               AspectRatio(
@@ -653,21 +723,21 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                                 width: totalW * brightnessWidth,
                                 color: colors.tertiary,
                                 icon: Icons.brightness_6_rounded,
-                                label: 'Brightness',
+                                label: context.l10n.brightness,
                                 percent: (brightnessWidth * 100).round(),
                               ),
                               _gestureZoneOverlayBox(
                                 width: totalW * overlayWidth,
                                 color: colors.primary,
                                 icon: Icons.touch_app_rounded,
-                                label: 'Overlay',
+                                label: context.l10n.overlay,
                                 percent: (overlayWidth * 100).round(),
                               ),
                               _gestureZoneOverlayBox(
                                 width: totalW * volumeWidth,
                                 color: colors.secondary,
                                 icon: Icons.volume_up_rounded,
-                                label: 'Volume',
+                                label: context.l10n.volume,
                                 percent: (volumeWidth * 100).round(),
                               ),
                             ],
@@ -725,7 +795,7 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
               ),
               const SizedBox(height: 14),
               _areaSliderRow(
-                label: 'Brightness Area',
+                label: context.l10n.brightnessArea,
                 percent: (brightnessWidth * 100).round(),
                 value: brightnessWidth,
                 min: 0.10,
@@ -734,7 +804,7 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                 onChanged: updateBrightness,
               ),
               _areaSliderRow(
-                label: 'Overlay Area (Tap)',
+                label: context.l10n.overlayAreaTap,
                 percent: (overlayWidth * 100).round(),
                 value: overlayWidth,
                 min: 0.10,
@@ -743,7 +813,7 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                 onChanged: updateOverlay,
               ),
               _areaSliderRow(
-                label: 'Volume Area',
+                label: context.l10n.volumeArea,
                 percent: (volumeWidth * 100).round(),
                 value: volumeWidth,
                 min: 0.10,
@@ -889,28 +959,23 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
           child: Row(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(slotNames.length, (idx) {
-                      final active = _activeControlSlot == idx;
-                      final (title, count) = slotNames[idx];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: AnymeXChip(
-                          label: '$title ($count)',
-                          isSelected: active,
-                          showCheck: false,
-                          onSelected: (_) =>
-                              setState(() => _activeControlSlot = idx),
-                        ),
-                      );
-                    }),
-                  ),
+                child: AnymeXPills(
+                  items: List.generate(slotNames.length, (idx) {
+                    final active = _activeControlSlot == idx;
+                    final (title, count) = slotNames[idx];
+                    return PillItem(
+                      label: title,
+                      count: count,
+                      isSelected: active,
+                      onTap: () => setState(() => _activeControlSlot = idx),
+                    );
+                  }),
+                  scrollable: true,
                 ),
               ),
+              const SizedBox(width: 8),
               IconButton(
-                tooltip: 'Reset to default layout',
+                tooltip: context.l10n.resetToDefaultLayout,
                 icon: const Icon(Icons.restart_alt_rounded, size: 20),
                 onPressed: _initializeDefaultButtonLayout,
               ),
@@ -995,14 +1060,34 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              PopupMenuButton<String>(
-                tooltip: 'Move to slot',
-                onSelected: (target) => _moveControlToSlot(control.id, target),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'top', child: Text('Top Bar')),
-                  PopupMenuItem(value: 'left', child: Text('Bottom Left')),
-                  PopupMenuItem(value: 'right', child: Text('Bottom Right')),
-                  PopupMenuItem(value: 'hidden', child: Text('Hidden')),
+              AnymeXPopupMenuButton<String>(
+                tooltip: context.l10n.moveToSlot,
+                onSelected: (target) {
+                  if (target != null) {
+                    _moveControlToSlot(control.id, target);
+                  }
+                },
+                items: [
+                  AnymeXMenuItem(
+                    value: 'top',
+                    title: context.l10n.topBar,
+                    leadingIcon: Icons.vertical_align_top_rounded,
+                  ),
+                  AnymeXMenuItem(
+                    value: 'left',
+                    title: context.l10n.bottomLeft,
+                    leadingIcon: Icons.align_horizontal_left_rounded,
+                  ),
+                  AnymeXMenuItem(
+                    value: 'right',
+                    title: context.l10n.bottomRight,
+                    leadingIcon: Icons.align_horizontal_right_rounded,
+                  ),
+                  AnymeXMenuItem(
+                    value: 'hidden',
+                    title: context.l10n.hidden,
+                    leadingIcon: Icons.visibility_off_rounded,
+                  ),
                 ],
                 child: Container(
                   padding:
@@ -1064,11 +1149,10 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                 .clamp(0.10, 0.45) *
             100)
         .round();
-    final volumePct = (PlayerUiKeys.volumeGestureWidth
-                .get<double>(0.35)
-                .clamp(0.10, 0.45) *
-            100)
-        .round();
+    final volumePct =
+        (PlayerUiKeys.volumeGestureWidth.get<double>(0.35).clamp(0.10, 0.45) *
+                100)
+            .round();
     final overlayPct = (100 - brightnessPct - volumePct).clamp(10, 80);
 
     final content = Obx(
@@ -1076,12 +1160,12 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AnymeXSectionBuilder(
-            title: 'Themes & Overlay',
+            title: context.l10n.themesOverlay,
             children: [
               AnymeXTile(
                 icon: HugeIcons.strokeRoundedPlaySquare,
                 onTap: _showPlayerControlThemeDialog,
-                title: 'Player Theme',
+                title: context.l10n.playerTheme,
                 subtitle: PlayerControlThemeRegistry.resolve(
                   settings.playerControlTheme,
                 ).name,
@@ -1090,41 +1174,55 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                 icon: Icons.data_object_rounded,
                 onTap: () =>
                     showJsonPlayerThemesSheet(context, setState, settings),
-                title: 'JSON Theme Manager',
+                title: context.l10n.jsonThemeManager,
                 subtitle:
                     '${PlayerControlThemeRegistry.jsonThemes.length} imported theme(s)',
               ),
               AnymeXTile(
                 icon: Icons.tune_rounded,
                 onTap: _showMediaIndicatorThemeDialog,
-                title: 'Swipe Indicator Theme',
+                title: context.l10n.swipeIndicatorTheme,
                 subtitle: MediaIndicatorThemeRegistry.resolve(
                   settings.mediaIndicatorTheme,
                 ).name,
               ),
+              AnymeXTile(
+                icon: Icons.linear_scale_rounded,
+                title: context.l10n.progressSliderStyle,
+                subtitle:
+                    _getSliderStyleLabel(context, settings.progressSliderStyle),
+                onTap: () => _showSliderStyleDialog(context),
+              ),
+              AnymeXTile.toggle(
+                icon: Icons.layers_clear_rounded,
+                title: 'Override Theme Slider Style',
+                subtitle:
+                    'Use your selected progress slider style instead of the active theme slider',
+                value: settings.overrideSliderTheme,
+                onChanged: (val) => settings.overrideSliderTheme = val,
+              ),
               AnymeXTile.toggle(
                 icon: Icons.animation_rounded,
-                title: 'Animate Control Overlay',
-                subtitle:
-                    'Disable to show and hide player controls instantly',
+                title: context.l10n.animateControlOverlay,
+                subtitle: context.l10n.disableToShowAndHidePlayer,
                 value: settings.playerMenuAnimation,
                 onChanged: (val) => settings.playerMenuAnimation = val,
               ),
             ],
           ),
           AnymeXSectionBuilder(
-            title: 'Gestures & Seeking',
+            title: context.l10n.gesturesSeeking,
             children: [
               AnymeXTile(
                 icon: Icons.aspect_ratio_rounded,
-                title: 'Gesture Areas',
+                title: context.l10n.gestureAreas,
                 subtitle:
                     'Brightness $brightnessPct% • Overlay $overlayPct% • Volume $volumePct%',
                 onTap: _showGestureAreasDialog,
               ),
               AnymeXTile.toggle(
                 icon: Icons.brightness_6_rounded,
-                title: 'Gesture for Brightness & Volume',
+                title: context.l10n.gestureForBrightnessVolume,
                 subtitle:
                     'Vertical swipe on brightness & volume areas to adjust levels',
                 value: settings.enableSwipeControls,
@@ -1132,16 +1230,23 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
               ),
               AnymeXTile.toggle(
                 icon: Icons.gesture_rounded,
-                title: 'Hold to Speed Up',
+                title: context.l10n.holdToSpeedUp,
                 subtitle:
                     'Press and hold on player screen to temporarily speed up playback',
                 value: settings.enableHoldToSeek,
                 onChanged: (val) => settings.enableHoldToSeek = val,
               ),
               AnymeXTile.toggle(
+                icon: Icons.speed_rounded,
+                title: context.l10n.doubleCurrentSpeedOnHold,
+                subtitle: context.l10n.doubleCurrentSpeedOnHoldDescription,
+                value: settings.relativeHoldSpeed,
+                onChanged: (val) => settings.relativeHoldSpeed = val,
+              ),
+              AnymeXTile.toggle(
                 icon: Icons.swap_horiz_rounded,
-                title: 'Swipe to Seek',
-                subtitle: 'Horizontal swipe across the screen to seek',
+                title: context.l10n.swipeToSeek,
+                subtitle: context.l10n.horizontalSwipeAcrossTheScreenTo,
                 value: settings.enableSlideToSeek,
                 onChanged: (val) => settings.enableSlideToSeek = val,
               ),
@@ -1155,8 +1260,8 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                     settings.seekDuration = value.toInt();
                   });
                 },
-                title: 'DoubleTap to Seek',
-                subtitle: 'Adjust Double Tap To Seek Duration',
+                title: context.l10n.doubletapToSeek,
+                subtitle: context.l10n.adjustDoubleTapToSeekDuration,
                 icon: Iconsax.forward5,
               ),
               AnymeXTile.slider(
@@ -1169,46 +1274,64 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                     settings.skipDuration = value.toInt();
                   });
                 },
-                title: 'MegaSkip Duration',
-                subtitle: 'Adjust MegaSkip Duration',
+                title: context.l10n.megaskipDuration,
+                subtitle: context.l10n.adjustMegaskipDuration,
                 icon: Iconsax.forward5,
+              ),
+              AnymeXTile.toggle(
+                icon: Icons.preview_rounded,
+                title: context.l10n.seekPreview,
+                subtitle: context.l10n.showThumbnailScrubbingPreviewWhileSeeking,
+                value: settings.enableSeekPreview.value,
+                onChanged: (val) {
+                  setState(() {
+                    settings.setSeekPreviewEnabled(val);
+                  });
+                },
               ),
             ],
           ),
           AnymeXSectionBuilder(
-            title: 'Auto Skip & Completion',
+            title: context.l10n.autoSkipCompletion,
             children: [
               AnymeXTile.toggle(
+                icon: Icons.skip_next_outlined,
+                title: 'Enable AniSkip',
+                subtitle: 'Show skip intro, outro, and recap buttons in the player',
+                value: settings.enableAniSkip,
+                onChanged: (val) => settings.enableAniSkip = val,
+              ),
+              AnymeXTile.toggle(
                 icon: Icons.fast_forward,
-                title: 'Auto Skip OP',
-                subtitle: 'Auto skip the opening song',
+                title: context.l10n.autoSkipOp,
+                subtitle: context.l10n.autoSkipTheOpeningSong,
                 value: settings.autoSkipOP,
                 onChanged: (val) => settings.autoSkipOP = val,
               ),
               AnymeXTile.toggle(
                 icon: Icons.fast_forward_outlined,
-                title: 'Auto Skip ED',
-                subtitle: 'Auto skip the ending song',
+                title: context.l10n.autoSkipEd,
+                subtitle: context.l10n.autoSkipTheEndingSong,
                 value: settings.autoSkipED,
                 onChanged: (val) => settings.autoSkipED = val,
               ),
               AnymeXTile.toggle(
                 icon: Icons.fast_forward_outlined,
-                title: 'Auto Skip Recap',
-                subtitle: 'Auto skip the recap section',
+                title: context.l10n.autoSkipRecap,
+                subtitle: context.l10n.autoSkipTheRecapSection,
                 value: settings.autoSkipRecap,
                 onChanged: (val) => settings.autoSkipRecap = val,
               ),
               AnymeXTile.toggle(
                 icon: Icons.all_inclusive,
-                title: 'Auto Skip Once Only',
-                subtitle: 'Auto skip only once per watch',
+                title: context.l10n.autoSkipOnceOnly,
+                subtitle: context.l10n.autoSkipOnlyOncePerWatch,
                 value: settings.autoSkipOnce,
                 onChanged: (val) => settings.autoSkipOnce = val,
               ),
               AnymeXTile.toggle(
                 icon: Icons.skip_next_rounded,
-                title: 'Auto Skip Filler',
+                title: context.l10n.autoSkipFiller,
                 subtitle:
                     'Automatically skip filler episodes when going to next episode',
                 value: settings.autoSkipFiller,
@@ -1224,14 +1347,14 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
                     settings.markAsCompleted = value.toInt();
                   });
                 },
-                title: 'Mark As Watched',
-                subtitle: 'Percentage watched before marking completed',
+                title: context.l10n.markAsWatched,
+                subtitle: context.l10n.percentageWatchedBeforeMarkingCompleted,
                 icon: Iconsax.tick_circle,
               ),
             ],
           ),
           AnymeXSectionBuilder(
-            title: 'Player Controls',
+            title: context.l10n.playerControls,
             disableSeperator: true,
             children: [
               _buildPlayerControlsBoard(),
@@ -1247,7 +1370,7 @@ class _SettingsPlayerControlsState extends State<SettingsPlayerControls> {
 
     return AnymeXScaffold(
       showHeader: !widget.isModal,
-      headerTitle: 'Controls & Gestures',
+      headerTitle: context.l10n.controlsGestures,
       body: Builder(
         builder: (ctx) => SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(

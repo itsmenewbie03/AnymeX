@@ -15,6 +15,8 @@ import 'package:anymex/widgets/anymex_widgets/anymex_tile_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:anymex/l10n/locale_controller.dart';
+import 'package:anymex/screens/settings/sub_settings/settings_episode_metadata.dart';
+import 'package:anymex/utils/function.dart';
 
 class SettingsCommon extends StatefulWidget {
   const SettingsCommon({super.key});
@@ -43,7 +45,7 @@ class _SettingsCommonState extends State<SettingsCommon> {
   Widget build(BuildContext context) {
     return AnymeXScaffold(
       showHeader: true,
-      headerTitle: 'Content & Preferences',
+      headerTitle: context.l10n.contentPreferences,
       body: Builder(
           builder: (ctx) => SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -52,7 +54,7 @@ class _SettingsCommonState extends State<SettingsCommon> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AnymeXSectionBuilder(
-                      title: 'Library & Content Safety',
+                      title: context.l10n.libraryContentSafety,
                       children: [
                         Obx(() {
                           final localeController = Get.find<LocaleController>();
@@ -65,6 +67,15 @@ class _SettingsCommonState extends State<SettingsCommon> {
                             onTap: () => _showLanguageDialog(context),
                           );
                         }),
+                        AnymeXTile(
+                          icon: Icons.subtitles_outlined,
+                          title: context.l10n.episodeMetadata,
+                          badge: AnymeXBadge.newBadge(context),
+                          subtitle:
+                              context.l10n.configureAnizipKitsuSimklAnilist,
+                          onTap: () =>
+                              navigate(() => const SettingsEpisodeMetadata()),
+                        ),
                         AnymeXTile.toggle(
                           icon: Icons.collections_bookmark_rounded,
                           title: context.l10n.unifiedLibrary,
@@ -205,26 +216,26 @@ class _SettingsCommonState extends State<SettingsCommon> {
                       );
                     }),
                     AnymeXSectionBuilder(
-                      title: 'Home Page Lists',
+                      title: context.l10n.homePageLists,
                       children: [
                         AnymeXTile(
                           icon: Icons.format_list_bulleted_sharp,
                           title: context.l10n.manageAnilistLists,
-                          subtitle: "Choose which lists to show on home page",
+                          subtitle: context.l10n.chooseWhichListsToShowOn,
                           onTap: () =>
                               _showHomePageCardsDialog(ServicesType.anilist),
                         ),
                         AnymeXTile(
                           icon: Icons.format_list_bulleted_sharp,
                           title: context.l10n.manageMyanimelistLists,
-                          subtitle: "Choose which lists to show on home page",
+                          subtitle: context.l10n.chooseWhichListsToShowOn,
                           onTap: () =>
                               _showHomePageCardsDialog(ServicesType.mal),
                         ),
                         AnymeXTile(
                           icon: Icons.format_list_bulleted_sharp,
                           title: context.l10n.manageSimklLists,
-                          subtitle: "Choose which lists to show on home page",
+                          subtitle: context.l10n.chooseWhichListsToShowOn,
                           onTap: () =>
                               _showHomePageCardsDialog(ServicesType.simkl),
                         ),
@@ -342,7 +353,7 @@ class _SettingsCommonState extends State<SettingsCommon> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AnymeXDialog(
-            title: 'Home Page Cards (${type.name.toUpperCase()})',
+            title: context.l10n.homePageCards((type.name.toUpperCase()).toString()),
             contentWidget: AnymeXTileBuilder<String>(
               items: localState.keys.toList(),
               isSelected: (key) => localState[key] ?? true,

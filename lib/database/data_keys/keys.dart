@@ -78,6 +78,8 @@ enum PlayerUiKeys {
   useMpvConf,
   brightnessGestureWidth,
   volumeGestureWidth,
+  progressSliderStyle,
+  overrideSliderTheme,
 }
 
 enum ReaderKeys {
@@ -102,6 +104,8 @@ enum ReaderKeys {
   colorFilterEnabled,
   colorFilterValue,
   colorFilterMode,
+  enhanceColorsEnabled,
+  enhanceColorsProfile,
   grayscaleEnabled,
   invertColorsEnabled,
   readerTheme,
@@ -263,6 +267,7 @@ enum PlayerSettingsKeys {
   autoSkipED,
   autoSkipOnce,
   autoSkipRecap,
+  enableAniSkip,
   enableSwipeControls,
   markAsCompleted,
   transitionSubtitle,
@@ -281,6 +286,8 @@ enum PlayerSettingsKeys {
   enableHoldToSeek,
   enableSlideToSeek,
   useMediaSession,
+  subtitleBackgroundOpacity,
+  relativeHoldSpeed,
 }
 
 enum UISettingsKeys {
@@ -317,6 +324,7 @@ enum UISettingsKeys {
   enableImmersiveMode,
   navBarStyle,
   tileStyle,
+  tileIconShape,
   appFontFamily,
   appFontScale,
   bottomNavBarMargin,
@@ -332,6 +340,11 @@ enum UISettingsKeys {
   detailsBlurScope,
   detailsOledMode,
   customCardStyleJson,
+  episodeMetaOrder,
+  episodeMetaDisabled,
+  selectedEpisodeMetaSource,
+  enableSeekPreview,
+  seekPreviewFirstBootDetected,
 }
 
 enum DownloadKeys {
@@ -364,6 +377,7 @@ enum CommentKeys {
 }
 
 enum NetworkKeys {
+  enableDoh,
   customDnsUrl,
   proxyUrl,
   verifyTls,

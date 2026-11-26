@@ -19,6 +19,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:anymex/l10n/l10n_extension.dart';
 
 class UpdateManager {
   static const String _releaseRepository =
@@ -133,7 +134,7 @@ class UpdateManager {
           if (betaRelease == null && stableRelease == null) {
             Logger.i("Failed to check for updates");
             if (manualCheck) {
-              snackBar('Failed to check for updates');
+              snackBar(Get.context!.l10n.failedToCheckForUpdates3);
             }
             return;
           }
@@ -159,12 +160,12 @@ class UpdateManager {
               _shouldUpdate(currentVersion, stableRelease['tag_name'] ?? '',
                   isBeta: false)) {
             snackBar(
-                'New stable update available: ${stableRelease['tag_name'] ?? ''}');
+                Get.context!.l10n.newStableUpdateAvailable(stableRelease['tag_name'] ?? ''));
             return;
           }
 
           if (manualCheck) {
-            snackBar('No updates available');
+            snackBar(Get.context!.l10n.noUpdatesAvailable);
           }
           return;
         }
@@ -193,7 +194,7 @@ class UpdateManager {
         if (stableRelease == null) {
           Logger.i("Failed to check for updates");
           if (manualCheck) {
-            snackBar('Failed to check for updates');
+            snackBar(Get.context!.l10n.failedToCheckForUpdates3);
           }
           return;
         }
@@ -213,14 +214,14 @@ class UpdateManager {
           }
         } else {
           if (manualCheck) {
-            snackBar('No updates available');
+            snackBar(Get.context!.l10n.noUpdatesAvailable);
           }
           debugPrint("You are already using the latest version!");
         }
       } catch (e) {
         debugPrint('Error checking for updates: $e');
         if (manualCheck) {
-          snackBar('Error checking for updates');
+          snackBar(Get.context!.l10n.errorCheckingForUpdates);
         }
       }
     }
@@ -540,7 +541,7 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
 
     final status = await Permission.requestInstallPackages.request();
     if (!status.isGranted) {
-      snackBar("Install permission required");
+      snackBar(Get.context!.l10n.installPermissionRequired);
     }
 
     final packageInfo = await PackageInfo.fromPlatform();
@@ -588,12 +589,12 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.error_outline, size: 32, color: Colors.red),
-        title: const AnymeXText('Download Failed'),
+        title: AnymeXText(Get.context!.l10n.downloadFailed3),
         content: AnymeXText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const AnymeXText('OK'),
+            child: AnymeXText(Get.context!.l10n.actionOk),
           )
         ],
       ),
@@ -622,7 +623,7 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const AnymeXText('OK'),
+            child: AnymeXText(Get.context!.l10n.actionOk),
           )
         ],
       ),
@@ -664,7 +665,7 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AnymeXText("New Version Available",
+                  AnymeXText(Get.context!.l10n.newVersionAvailable,
                     variant: TextVariant.bold,
                     size: 18,
                   ),
@@ -726,7 +727,7 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
             Icon(Icons.auto_awesome_rounded,
                 color: colorScheme.primary, size: 18),
             const SizedBox(width: 8),
-            const AnymeXText("What's New",
+            AnymeXText(Get.context!.l10n.whatSNew,
               variant: TextVariant.bold,
               size: 15,
             ),
@@ -824,7 +825,7 @@ class _UpdateBottomSheetState extends State<UpdateBottomSheet>
                 border: BorderSide(color: colorScheme.outline.opaque(0.2)),
                 child: Center(
                   child: AnymeXText(
-                    "Later",
+                    Get.context!.l10n.later,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,

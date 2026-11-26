@@ -118,7 +118,7 @@ class _HistoryEditorState extends State<HistoryEditor> {
     });
 
     HapticFeedback.mediumImpact();
-    snackBar('$deletedCount history items deleted');
+    snackBar(Get.context!.l10n.historyItemsDeleted(deletedCount.toString()));
   }
 
   void _toggleSelection(String mediaId) {
@@ -210,7 +210,7 @@ class _HistoryEditorState extends State<HistoryEditor> {
 
     AnymeXDialog(
       title: context.l10n.deleteHistoryItem,
-      message: 'Remove "$itemName" from your $_historyLabel?',
+      message: context.l10n.removeFromYour(itemName.toString(), _historyLabel.toString()),
       confirmText: context.l10n.delete,
       onConfirm: () => _deleteHistory(item),
     ).show(context);
@@ -738,7 +738,7 @@ class _HistoryEditorState extends State<HistoryEditor> {
                     ),
                     const SizedBox(width: 10),
                     AnymeXText(
-                      'Delete Selected (${_selectedMediaIds.length})',
+                      context.l10n.deleteSelectedCount(_selectedMediaIds.length),
                       size: 14,
                       variant: TextVariant.bold,
                       color: context.colors.onError,

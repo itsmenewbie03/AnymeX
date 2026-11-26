@@ -339,7 +339,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
                             : Icons.arrow_downward_rounded,
                         size: 16,
                       ),
-                      label: AnymeXText(_sortAscending ? 'Ascending' : 'Descending',
+                      label: AnymeXText(_sortAscending ? context.l10n.ascending : context.l10n.descending,
                           style: const TextStyle(fontSize: 12)),
                     ),
                   ],
@@ -438,7 +438,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
                           onPressed: () =>
                               setSheetState(() => tempSelected.clear()),
                           child: AnymeXText(context.l10n.clear,
-                              style: TextStyle(fontSize: 12)),
+                              style: const TextStyle(fontSize: 12)),
                         ),
                     ],
                   ),
@@ -533,7 +533,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
               icon: Icon(Icons.arrow_back_ios_new, color: colors.primary),
             ),
             title: AnymeXText(
-              "${widget.userName}'s $typeLabel List",
+              context.l10n.sList(widget.userName, typeLabel),
               style: TextStyle(fontSize: 16, color: colors.primary),
             ),
           ),
@@ -549,7 +549,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
               icon: Icon(Icons.arrow_back_ios_new, color: colors.primary),
             ),
             title: AnymeXText(
-              "${widget.userName}'s $typeLabel List",
+              context.l10n.sList(widget.userName, typeLabel),
               style: TextStyle(fontSize: 16, color: colors.primary),
             ),
           ),
@@ -572,7 +572,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
             icon: Icon(Icons.arrow_back_ios_new, color: colors.primary),
           ),
           title: AnymeXText(
-            "${widget.userName}'s $typeLabel List",
+            context.l10n.sList(widget.userName, typeLabel),
             style: TextStyle(fontSize: 16, color: colors.primary),
           ),
           actions: [
@@ -643,7 +643,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
                       Icon(Iconsax.arrow_swap_horizontal,
                           size: 20, color: colors.onSurfaceVariant),
                       const SizedBox(width: 12),
-                      AnymeXText(_isReversed ? 'Default tab order' : 'Reverse tabs'),
+                      AnymeXText(_isReversed ? context.l10n.defaultTabOrder : context.l10n.reverseTabs),
                     ],
                   ),
                 ),
@@ -678,7 +678,7 @@ class _UserMediaListPageState extends State<UserMediaListPage>
                             style: TextStyle(
                                 color: colors.onSurface, fontSize: 14),
                             decoration: InputDecoration(
-                              hintText: 'Search ${typeLabel.toLowerCase()}...',
+                              hintText: context.l10n.search2((typeLabel.toLowerCase()).toString()),
                               hintStyle: TextStyle(
                                   color:
                                       colors.onSurfaceVariant.withOpacity(0.4),
